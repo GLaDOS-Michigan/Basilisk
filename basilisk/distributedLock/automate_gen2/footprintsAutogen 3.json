@@ -1,0 +1,13 @@
+{
+  "Host": {
+    "null": {
+      "SendGrant": [
+        "hasLock: bool"
+      ],
+      "ReceiveGrantStep": [
+        "hasLock: bool",
+        "myEpoch: nat"
+      ]
+    }
+  }
+}

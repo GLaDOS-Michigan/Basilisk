@@ -1,0 +1,13 @@
+#!/bin/sh
+
+scriptpath=$( cd "$(dirname "${BASH_SOURCE[0]}")" ; pwd -P )
+
+dafny="$scriptpath/../../../local-dafny/Scripts/dafny"
+
+dafnyVerify="$dafny /timeLimit:20 /compile:0  /noNLarith /autoTriggers:1 /vcsCores:10"
+
+files="$scriptpath/../../lib/* $scriptpath/../hosts.dfy $scriptpath/distributedSystem.dfy $scriptpath/spec.dfy $scriptpath/messageInvariants.dfy $scriptpath/monotonicityInvariants.dfy $scriptpath/applicationProof.dfy"
+
+echo "Verifying $files" | tr " " "\n"
+
+time $dafnyVerify $files

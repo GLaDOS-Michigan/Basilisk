@@ -1,0 +1,17 @@
+protocol,in_kondo,kondo_mods
+echoServer,true,0
+ringLeaderElection,true,0
+simplifiedLeaderElection,true,0
+paxos,true,220
+paxos-combined,false,0
+paxos-dynamic,false,0
+flexiblePaxos,true,226
+distributedLock,true,0
+shardedKv,true,7
+shardedKvBatched,true,0
+lockServer,true,15
+twoPhaseCommit,true,57
+threePhaseCommit,false,0
+reduce,false,0
+raftLeaderElection,false,0
+multiPaxos,false,0

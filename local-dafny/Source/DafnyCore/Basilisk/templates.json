@@ -1,0 +1,558 @@
+{
+  "InitImpliesMonotonicityInvHeader": 
+    [ 
+      "lemma InitImpliesMonotonicityInv(c: Constants, v: Variables)",
+      "  requires Init(c, v)",
+      "  ensures MonotonicityInv(c, v)",
+      "{"
+    ],
+  "InitImpliesMessageInvHeader":
+    [
+      "lemma InitImpliesMessageInv(c: Constants, v: Variables)",
+      "  requires Init(c, v)",
+      "  ensures MessageInv(c, v)",
+      "{",
+      "  InitImpliesValidVariables(c, v);"
+    ],
+  "MonotonicityInvInductiveHeader":
+    [
+      "lemma MonotonicityInvInductive(c: Constants, v: Variables, v': Variables)",
+      "  requires MonotonicityInv(c, v)",
+      "  requires Next(c, v, v')",
+      "  ensures MonotonicityInv(c, v')",
+      "{",
+      "  VariableNextProperties(c, v, v');"
+    ],
+  "MessageInvInductiveHeader":
+    [
+      "lemma MessageInvInductive(c: Constants, v: Variables, v': Variables)",
+      "  requires MessageInv(c, v)",
+      "  requires Next(c, v, v')",
+      "  ensures MessageInv(c, v')"
+    ],
+  "NetworkModule":
+    [
+      "module Network {",
+      "  import opened Types",
+      "",
+      "  datatype Variables = Variables(sentMsgs:set<Message>)",
+      "",
+      "  ghost predicate Init(v: Variables) {",
+      "    && v.sentMsgs == {}",
+      "  }",
+      "",
+      "  ghost predicate Next(v: Variables, v': Variables, msgOps: MessageOps)",
+      "  {",
+      "    && (msgOps.recv.Some? ==> msgOps.recv.value in v.sentMsgs)",
+      "    && v'.sentMsgs ==",
+      "      v.sentMsgs + if msgOps.send.None? then {} else { msgOps.send.value }",
+      "  }",
+      "}  // end module Network"
+    ],
+  "DatatypeVariables":
+    [
+      "datatype Variables = Variables(",
+      "  history: seq<Hosts>,",
+      "  network: Network.Variables",
+      ") {",
+      "",
+      "  ghost predicate ValidHistoryIdx(i: int) {",
+      "    0 <= i < |history|",
+      "  }",
+      "",
+      "  ghost predicate ValidHistoryIdxStrict(i: int) {",
+      "    0 <= i < |history|-1",
+      "  }",
+      "",
+      "  ghost predicate WF(c: Constants) {",
+      "    && c.WF()",
+      "    && 0 < |history|",
+      "    && (forall i | ValidHistoryIdx(i) :: history[i].WF(c))",
+      "  }",
+      "",
+      "  ghost function Last() : (h: Hosts)",
+      "    requires 0 < |history|",
+      "    ensures h == history[|history|-1]",
+      "    ensures h == History(|history|-1)",
+      " {",
+      "    UtilitiesLibrary.Last(history)",
+      "  }",
+      "",
+      "  ghost function History(i: int) : (h: Hosts)",
+      "    requires ValidHistoryIdx(i)",
+      "    ensures h == history[i]",
+      "  {",
+      "    history[i]",
+      "  }",
+      "}  // end datatype Variables"
+    ],
+  "InitHostsHeader":
+    [
+      "ghost predicate InitHosts(c: Constants, h: Hosts)",
+      "  requires h.WF(c)",
+      "{"
+    ],
+  "Init":
+    [
+      "ghost predicate Init(c: Constants, v: Variables)",
+      "{",
+      "  && v.WF(c)",
+      " && |v.history| == 1",
+      "  && InitHosts(c, v.History(0))",
+      "  && Network.Init(v.network)",
+      "}"
+    ],
+  "NextStepHeader":
+    [
+      "ghost predicate NextStep(c: Constants, h: Hosts, h': Hosts, n: Network.Variables, n': Network.Variables, step: Step)",
+      "  requires h.WF(c) && h'.WF(c)",
+      "{",
+      "  && Network.Next(n, n', step.msgOps)",
+      "  && match step"
+    ],
+  "Next":
+    [
+      "ghost predicate Next(c: Constants, v: Variables, v': Variables)",
+      "{",
+      "  && v.WF(c)",
+      "  && v'.WF(c)",
+      "  && IsSeqExtension(v.history, v'.history)",
+      "  && exists step :: NextStep(c, v.Last(), v'.Last(), v.network, v'.network, step)",
+      "}"
+    ],
+  "VariablePropertiesSeperator":
+    [
+      "/***************************************************************************************",
+      "*                                Variable properties                                   *",
+      "***************************************************************************************/"
+    ],
+  "ValidHistory":
+    [
+      "ghost predicate {:opaque} ValidHistory(c: Constants, v: Variables)",
+      "  requires v.WF(c)",
+      "{",
+      "  InitHosts(c, v.History(0))",
+      "}"
+    ],
+  "ValidVariables":
+    [  
+      "// Bundle of Variable properties",
+      "ghost predicate ValidVariables(c: Constants, v: Variables)",
+      "  requires v.WF(c)",
+      "{",
+      "  && ValidHistory(c, v)",
+      "}"
+    ],
+  "InitImpliesValidVariables":
+    [
+      "lemma InitImpliesValidVariables(c: Constants, v: Variables)",
+      "  requires Init(c, v)",
+      "  ensures ValidHistory(c, v)",
+      "{",
+      "  reveal_ValidHistory();",
+      "}"
+    ],
+  "InvNextValidVariables":
+    [
+      "lemma InvNextValidVariables(c: Constants, v: Variables, v': Variables)",
+      "  requires v.WF(c)",
+      "  requires ValidHistory(c, v)",
+      "  requires Next(c, v, v')",
+      "  ensures ValidHistory(c, v')",
+      "{",
+      "  reveal_ValidHistory();",
+      "  VariableNextProperties(c, v, v');",
+      "}"
+    ],
+  "VariableNextProperties":
+    [
+      "lemma VariableNextProperties(c: Constants, v: Variables, v': Variables)", 
+      "  requires v.WF(c)",
+      "  requires Next(c, v, v')",
+      "  ensures 1 < |v'.history|",
+      "  ensures |v.history| == |v'.history| - 1",
+      "  ensures v.Last() == v.History(|v'.history|-2) == v'.History(|v'.history|-2)",
+      "  ensures forall i | 0 <= i < |v'.history|-1 :: v.History(i) == v'.History(i)",
+      "{",
+      "  assert 0 < |v.history|;",
+      "  assert 1 < |v'.history|;",
+      "}"
+    ],
+  "ExistingMessage":
+    [
+      "ghost predicate {:opaque} ExistingMessage(v: Variables, msg: Message) {",
+      "  msg in v.network.sentMsgs",
+      "}"
+    ],
+  "InvNextValidMessages":
+    [
+      "lemma InvNextValidMessages(c: Constants, v: Variables, v': Variables)",
+      "  requires v.WF(c)",
+      "  requires ValidMessages(c, v)",
+      "  requires Next(c, v, v')",
+      "  ensures ValidMessages(c, v')",
+      "{}"
+    ],
+  "AuxProofsSeparator":
+    [
+      "/***************************************************************************************",
+      "*                                     Aux Proofs                                       *",
+      "***************************************************************************************/"
+    ],
+  "UniqueKeyInFlight":
+    [
+      "ghost predicate {:trigger KeyInFlightByMessage} UniqueKeyInFlight(c: Constants, v: Variables, k: UniqueKey)",
+      "requires v.WF(c)",
+      "{",
+      "  exists msg :: KeyInFlightByMessage(c, v, msg, k)",
+      "}"
+    ],
+  "DefinitionsSeparator":
+    [
+      "/***************************************************************************************",
+      "*                                     Definitions                                       *",
+      "***************************************************************************************/"
+    ],
+  "InvariantsSeparator":
+    [
+      "/***************************************************************************************",
+      "*                                     Invariants                                       *",
+      "***************************************************************************************/"
+    ],
+  "AtMostOneInFlightMessagePerKey":
+    [
+      "ghost predicate AtMostOneInFlightMessagePerKey(c: Constants, v: Variables)",
+      "  requires v.WF(c)",
+      "{",
+      "  forall k, m1, m2 | KeyInFlightByMessage(c, v, m1, k) && KeyInFlightByMessage(c, v, m2, k)",
+      "  :: m1 == m2",
+      "}"
+    ],
+  "HostOwnsKeyImpliesNotInFlightSuffix":
+    [
+      "HostOwnsKeyImpliesNotInFlight(c: Constants, v: Variables)",
+      "  requires v.WF(c)",
+      "{",
+      "  forall k | !NoHostOwnsKeyMain(c, v, k)",
+      "  ::",
+      "  !UniqueKeyInFlight(c, v, k)",
+      "}"
+    ],
+  "InitImpliesOwnershipInv":
+    [ 
+      "lemma InitImpliesOwnershipInv(c: Constants, v: Variables)",
+      "  requires Init(c, v)",
+      "  ensures OwnershipInv(c, v)",
+      "{}"
+    ],
+  "OwnershipInvInductiveHeader":
+    [ 
+      "lemma OwnershipInvInductive(c: Constants, v: Variables, v': Variables)",
+      "  requires OwnershipInv(c, v)",
+      "  requires Next(c, v, v')",
+      "  ensures OwnershipInv(c, v')",
+      "{"
+    ],
+  "InvNextAtMostOneInFlightMessagePerKey":
+    [
+      "lemma InvNextAtMostOneInFlightMessagePerKey(c: Constants, v: Variables, v': Variables)",
+      "  requires v'.WF(c)",
+      "  requires OwnershipInv(c, v)",
+      "  requires Next(c, v, v')",
+      "  ensures AtMostOneInFlightMessagePerKey(c, v')",
+      "{",
+      "  forall k, m1, m2 | KeyInFlightByMessage(c, v', m1, k) && KeyInFlightByMessage(c, v', m2, k)",
+      "  ensures m1 == m2",
+      "  {",
+      "    if m1 != m2 {",
+      "      if KeyInFlightByMessage(c, v, m1, k) {",
+      "        InvNextAtMostOneInFlightHelper(c, v, v', m1, m2, k);",
+      "      } else {",
+      "        InvNextAtMostOneInFlightHelper(c, v, v', m2, m1, k);",
+      "      }",
+      "     }",
+      "  }",
+      "}"
+    ],
+  "InvNextAtMostOneInFlightHelper":
+    [
+      "lemma InvNextAtMostOneInFlightHelper(c: Constants, v: Variables, v': Variables, m1: Message, m2: Message, k: UniqueKey)",
+      "  requires v'.WF(c)",
+      "  requires OwnershipInv(c, v)",
+      "  requires Next(c, v, v')",
+      "  // input constraints",
+      "  requires m1 != m2",
+      "  requires KeyInFlightByMessage(c, v, m1, k)",
+      "  requires !KeyInFlightByMessage(c, v, m2, k)",
+      "  // postcondition",
+      "  ensures !KeyInFlightByMessage(c, v', m2, k)",
+      "{",
+      "  assert UniqueKeyInFlight(c, v, k);",
+      "}"
+    ],
+  "InvNextHostOwnsKeyImpliesNotInFlight":
+    [
+      "lemma InvNextHostOwnsKeyImpliesNotInFlight(c: Constants, v: Variables, v': Variables)",
+      "  requires v'.WF(c)",
+      "  requires OwnershipInv(c, v)",
+      "  requires Next(c, v, v')",
+      "  ensures HostOwnsKeyImpliesNotInFlight(c, v')",
+      "{",
+      "  forall k | !NoHostOwnsKeyMain(c, v', k)",
+      "  ensures !UniqueKeyInFlight(c, v', k)",
+      "  {",
+      "    if UniqueKeyInFlight(c, v', k) {",
+      "      var msg :| KeyInFlightByMessage(c, v', msg , k);",
+      "      if msg in v.network.sentMsgs {",
+      "        assert KeyInFlightByMessage(c, v, msg, k);",
+      "        assert NoHostOwnsKeyMain(c, v, k);",
+      "        var dsStep :| NextStep(c, v.Last(), v'.Last(), v.network, v'.network, dsStep);",
+      "        assert dsStep.msgOps.recv.value == msg by {",
+      "          if dsStep.msgOps.recv.value != msg {",
+      "            var m' := dsStep.msgOps.recv.value;",
+      "            assert !KeyInFlightByMessage(c, v, m', k);",
+      "          }",
+      "        }",
+      "      } else {",
+      "        assert !(NoHostOwnsKeyMain(c, v, k));",
+      "      }",
+      "    }",
+      "  }",
+      "}"
+    ], 
+  "ObligationsSeparator":
+    [
+      "/***************************************************************************************",
+      "*                                    Obligations                                       *",
+      "***************************************************************************************/"
+    ],
+  "SkolemizationsSeparator":
+    [
+      "/***************************************************************************************",
+      "*                                  Skolemizations                                      *",
+      "***************************************************************************************/"
+    ],
+  "HelperFunctionsSeparator":
+    [
+      "/***************************************************************************************",
+      "*                                  Helper Functions                                    *",
+      "***************************************************************************************/"
+    ],
+  "InvNextLemmasSeparator":
+    [
+      "/***************************************************************************************",
+      "*                                   InvNext Proofs                                     *",
+      "***************************************************************************************/"
+    ],
+  "HelperLemmasSeparator":
+    [
+      "/***************************************************************************************",
+      "*                                    Helper Lemmas                                     *",
+      "***************************************************************************************/"
+    ],
+  "SyncSpecificLemma":
+    [
+      "{",
+      "  // TODO: This lemma has sync-specific constructs",
+      "  assume false;",
+      "}"
+    ],
+  "AtMostOwnerPerKeyImpliesSafetyLemmaHeader":
+    [ 
+      "lemma AtMostOwnerPerKeyImpliesSafety(c: Constants, v: Variables)",
+      "  requires v.WF(c)"
+    ],
+  "HostReceiveValidity" : 
+  [
+    "ghost predicate {{:opaque}} {0}ReceiveValidity(c: Constants, v: Variables)",
+    "  requires v.WF(c)",
+    "{{",
+    "  forall idx, i |",
+    "    && v.ValidHistoryIdx(i)",
+    "    && 0 <= idx < |c.{1}|",
+    "    && v.History(i).{1}[idx] !=  v.History(0).{1}[idx]",
+    "  ::",
+    "     (exists j, step, msgOps ::",
+    "       && 0 <= j < i",
+    "       && (v.History(j).{1}[idx] != v.History(j+1).{1}[idx])",
+    "       && (v.History(j+1).{1}[idx] == v.History(i).{1}[idx])",
+    "       && {0}.NextStep(c.{1}[idx], v.History(j).{1}[idx], v.History(j+1).{1}[idx], step, msgOps)",
+    "       && (msgOps.recv.Some? ==> msgOps.recv.value in v.network.sentMsgs)",
+    "     )",
+    "}}",
+    "",
+    "ghost predicate {{:opaque}} {0}ReceiveValidityPost(c: Constants, v: Variables, i: nat, idx: int)",
+    "  requires v.WF(c)",
+    "  requires v.ValidHistoryIdx(i)",
+    "  requires 0 <= idx < |c.{1}|",
+    "{{",
+    "    exists j, step, msgOps ::",
+    "       && 0 <= j < i",
+    "       && (v.History(j).{1}[idx] != v.History(j+1).{1}[idx])",
+    "       && (v.History(j+1).{1}[idx] == v.History(i).{1}[idx])",
+    "       && {0}.NextStep(c.{1}[idx], v.History(j).{1}[idx], v.History(j+1).{1}[idx], step, msgOps)",
+    "       && (msgOps.recv.Some? ==> msgOps.recv.value in v.network.sentMsgs)",
+    "}}"
+  ],
+  "HostReceiveSkolemization" :
+  [
+    "lemma {0}ReceiveSkolemization(c: Constants, v: Variables, i: nat, idx: int)",
+    "returns (j: nat, step: {0}.Step, msgOps: MessageOps)",
+    "  requires v.WF(c)",
+    "  requires {0}ReceiveValidity(c, v)",
+    "  requires 0 <= idx < |c.{1}|",
+    "  requires v.ValidHistoryIdx(i)",
+    "  requires v.History(i).{1}[idx] != v.History(0).{1}[idx]",
+    "  ensures v.ValidHistoryIdxStrict(j)",
+    "  ensures 0 <= j < i ",
+    "  ensures v.History(j).{1}[idx] != v.History(j+1).{1}[idx]",
+    "  ensures v.History(j+1).{1}[idx] == v.History(i).{1}[idx]",
+    "  ensures {0}.NextStep(c.{1}[idx], v.History(j).{1}[idx], v.History(j+1).{1}[idx], step, msgOps)",
+    "  ensures msgOps.recv.Some? ==> msgOps.recv.value in v.network.sentMsgs",
+    "{{",
+    "  reveal_{2}();",
+    "  j, step, msgOps :|",
+    "      && 0 <= j < i",
+    "      && (v.History(j).{1}[idx] != v.History(j+1).{1}[idx])",
+    "      && (v.History(j+1).{1}[idx] == v.History(i).{1}[idx])",
+    "      && {0}.NextStep(c.{1}[idx], v.History(j).{1}[idx], v.History(j+1).{1}[idx], step, msgOps)",
+    "      && (msgOps.recv.Some? ==> msgOps.recv.value in v.network.sentMsgs);",
+    "}}"
+  ],
+  "InvNextHostReceiveValidity" :
+  [
+    "lemma InvNext{0}ReceiveValidity(c: Constants, v: Variables, v': Variables)",
+    "  requires v.WF(c)",
+    "  requires {0}ReceiveValidity(c, v)",
+    "  requires Next(c, v, v')",
+    "  ensures {0}ReceiveValidity(c, v')",
+    "{{",
+    "  forall idx, i |",
+    "    && v'.ValidHistoryIdx(i)",
+    "    && 0 <= idx < |c.{1}|",
+    "    && v'.History(i).{1}[idx] != v'.History(0).{1}[idx]",
+    "  ensures",
+    "    {0}ReceiveValidityPost(c, v', i, idx)",
+    "  {{",
+    "    VariableNextProperties(c, v, v');",
+    "    if v'.ValidHistoryIdxStrict(i) {{",
+    "      assert {0}ReceiveValidityPost(c, v', i, idx) by {{",
+    "       reveal_{0}ReceiveValidity();",
+    "       reveal_{0}ReceiveValidityPost();",
+    "      }}",
+    "    }} else {{",
+    "      if v'.History(i-1).{1}[idx] == v'.History(i).{1}[idx] {{",
+    "        var k, step, msgOps := {0}ReceiveSkolemization(c, v, i-1, idx);",
+    "        // triggers",
+    "        assert 0 <= k < i;",
+    "        assert v'.History(k).{1}[idx] != v'.History(k+1).{1}[idx];",
+    "        assert v'.History(k+1).{1}[idx] == v'.History(i).{1}[idx];",
+    "        assert {0}.NextStep(c.{1}[idx], v'.History(k).{1}[idx], v'.History(k+1).{1}[idx], step, msgOps);",
+    "      }} else {{",
+    "        // triggers",
+    "        assert v'.History(i-1).{1}[idx] != v'.History(i).{1}[idx];",
+    "        var j := i-1;",
+    "        assert 0 <= j < i;",
+    "        assert j + 1 == i;",
+    "        assert v'.History(j+1).{1}[idx] == v'.History(i).{1}[idx];",
+    "      }}",
+    "      assert {0}ReceiveValidityPost(c, v', i, idx) by {{",
+    "       reveal_{0}ReceiveValidity();",
+    "       reveal_{0}ReceiveValidityPost();",
+    "      }}",
+    "    }}",
+    "  }}",
+    "  assert {0}ReceiveValidity(c, v') by {{",
+    "    reveal_{0}ReceiveValidity();",
+    "    reveal_{0}ReceiveValidityPost();",
+    "  }}",
+    "}}"
+  ],
+  "StepWitnessCondition" : 
+  [
+    "ghost predicate {0}(c: Constants, v: Variables, i: nat, idx: int, {1})",
+    "  requires v.WF(c)",
+    "  requires v.ValidHistoryIdx(i)",
+    "  requires 0 <= idx < |c.{2}|",
+    "{{",
+    "  {3}",
+    "}}"
+  ],
+  "ReceiveSkolemization" : 
+  [
+    "lemma {0}(c: Constants, v: Variables, i: nat, idx: int, {1})",
+    "  returns (j: nat, inMsg: Message)",
+    "  requires v.WF(c)",
+    "  requires ValidHistory(c, v)",
+    "  requires {2}ReceiveValidity(c, v)",
+    "  requires v.ValidHistoryIdx(i)",
+    "  requires 0 <= idx < |c.{3}|",
+    "  requires {4}(c, v, i, idx, {5})",
+    "  ensures 0 <= j < i",
+    "  ensures !{4}(c, v, j, idx, {5})",
+    "  ensures {4}(c, v, j+1, idx, {5})",
+    "  ensures {6}",
+    "  ensures inMsg in v.network.sentMsgs",
+    "  decreases i",
+    "{{",
+    "  reveal_ValidHistory();",
+    "  var xj, xstep, xmsgOps := {2}ReceiveSkolemization(c, v, i, idx);",
+    "  if !{4}(c, v, xj, idx, {5}) {{",
+    "    j, inMsg := xj, xmsgOps.recv.value;",
+    "  }} else {{",
+    "    j, inMsg := {0}(c, v, xj, idx, {5});",
+    "  }}",
+    "}}"
+  ],
+  "ReceiveSkolemization2" : 
+  [
+    "lemma {0}(c: Constants, v: Variables, i: nat, idx: int, {1})",
+    "  returns (j: nat, inMsg: Message, outMsg: Message)",
+    "  requires v.WF(c)",
+    "  requires ValidHistory(c, v)",
+    "  requires {2}ReceiveValidity(c, v)",
+    "  requires v.ValidHistoryIdx(i)",
+    "  requires 0 <= idx < |c.{3}|",
+    "  requires {4}(c, v, i, idx, {5})",
+    "  ensures 0 <= j < i",
+    "  ensures !{4}(c, v, j, idx, {5})",
+    "  ensures {4}(c, v, j+1, idx, {5})",
+    "  ensures {6}",
+    "  ensures inMsg in v.network.sentMsgs",
+    "  decreases i",
+    "{{",
+    "  reveal_ValidHistory();",
+    "  var xj, xstep, xmsgOps := {2}ReceiveSkolemization(c, v, i, idx);",
+    "  if !{4}(c, v, xj, idx, {5}) {{",
+    "    j, inMsg, outMsg := xj, xmsgOps.recv.value, xmsgOps.send.value;",
+    "  }} else {{",
+    "    j, inMsg, outMsg := {0}(c, v, xj, idx, {5});",
+    "  }}",
+    "}}"
+  ],
+  "ReceiveSkolemizationNull" : 
+  [
+    "lemma {0}(c: Constants, v: Variables, i: nat, idx: int, {1})",
+    "  returns (j: nat, step: {2}.Step, msgOps: MessageOps)",
+    "  requires v.WF(c)",
+    "  requires ValidHistory(c, v)",
+    "  requires {2}ReceiveValidity(c, v)",
+    "  requires v.ValidHistoryIdx(i)",
+    "  requires 0 <= idx < |c.{3}|",
+    "  requires {4}(c, v, i, idx, {5})",
+    "  ensures 0 <= j < i",
+    "  ensures !{4}(c, v, j, idx, {5})",
+    "  ensures {4}(c, v, j+1, idx, {5})",
+    "  ensures {2}.NextStep(c.{3}[idx], v.History(j).{3}[idx], v.History(j+1).{3}[idx], step, msgOps)",
+    "  decreases i",
+    "{{",
+    "  reveal_ValidHistory();",
+    "  var xj, xstep, xmsgOps := {2}ReceiveSkolemization(c, v, i, idx);",
+    "  if !{4}(c, v, xj, idx, {5}) {{",
+    "    j, step, msgOps := xj, xstep, xmsgOps;",
+    "  }} else {{",
+    "    j, step, msgOps := {0}(c, v, xj, idx, {5});",
+    "  }}",
+    "}}"
+  ]
+}

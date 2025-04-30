@@ -1,0 +1,39 @@
+{
+  "LeaderHost": {
+    "Promise": {
+      "ReceivePromise1": [
+        "receivedPromisesAndValue.promises: set<nat>"
+      ],
+      "ReceivePromise2": [
+        "receivedPromisesAndValue.promises: set<nat>",
+        "receivedPromisesAndValue.value: Value",
+        "highestHeardBallot: MonotonicNatOption"
+      ]
+    }
+  },
+  "AcceptorHost": {
+    "Prepare": {
+      "ReceivePrepareSendPromise": [
+        "promised: MonotonicNatOption"
+      ]
+    },
+    "Propose": {
+      "ReceiveProposeSendAccept": [
+        "promised: MonotonicNatOption",
+        "acceptedVB: MonotonicVBOption"
+      ]
+    }
+  },
+  "LearnerHost": {
+    "Accept": {
+      "ReceiveAccept": [
+        "receivedAccepts.m: map<ValBal, set<AcceptorId>>"
+      ]
+    },
+    "null": {
+      "NextLearnStep": [
+        "learned: Option<Value>"
+      ]
+    }
+  }
+}

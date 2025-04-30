@@ -1,0 +1,10 @@
+#!/bin/sh
+
+protocols="echoServer ringLeaderElection simplifiedLeaderElection paxos paxos-combined paxos-dynamic multiPaxos twoPhaseCommit flexiblePaxos distributedLock shardedKv shardedKvBatched lockServer threePhaseCommit"
+
+# Loop over each word in the string
+for dir in $protocols; do
+    echo "Verifying $dir"
+    ./$dir/automate_gen2/verify
+    echo ""
+done

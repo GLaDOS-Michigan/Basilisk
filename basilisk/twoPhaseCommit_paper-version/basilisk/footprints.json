@@ -1,0 +1,19 @@
+{
+  "CoordinatorHost": {
+    "Vote": {
+      "ReceiveVoteNo": [
+        "noVotes: MonotonicSet<HostId>"
+      ],
+      "ReceiveVoteYes": [
+        "yesVotes: MonotonicSet<HostId>"
+      ]
+    }
+  },
+  "ParticipantHost": {
+    "Decide": {
+      "ReceiveDecide": [
+        "decision: MonotonicWriteOnceOption<Decision>"
+      ]
+    }
+  }
+}

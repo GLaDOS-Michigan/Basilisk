@@ -1,0 +1,33 @@
+#!/bin/sh
+
+scriptpath=$( cd "$(dirname "${BASH_SOURCE[0]}")" ; pwd -P )
+
+dafny="$scriptpath/../../../local-dafny/Scripts/dafny"
+
+dafnyFootprint="$dafny /genFootprint"
+dafnyMsgInv="$dafny /msgMonoInvs"
+dafnyVerify="$dafny /timeLimit:20 /compile:0  /noNLarith /autoTriggers:1 /vcsCores:10"
+
+files1="$scriptpath/../../lib/* $scriptpath/../hosts.dfy $scriptpath/distributedSystem.dfy $scriptpath/spec.dfy $scriptpath/monotonicityInvariantsAutogen.dfy"
+files2="$scriptpath/messageInvariantsAutogen.dfy"
+files3="$scriptpath/applicationProofDemo.dfy"
+
+rm -f $scriptpath/footprintsAutogen.json $scriptpath/messageInvariantsAutogen.dfy $scriptpath/monotonicityInvariantsAutogen.dfy
+
+echo "Generating footprints"
+$dafnyFootprint "$scriptpath/distributedSystem.dfy" > footprints.log
+
+echo "Generating invariants"
+$dafnyMsgInv "$scriptpath/distributedSystem.dfy" > autoInvs.log
+
+time { 
+    echo "Verifying batch 1/3"
+    echo "$files1" | tr " " "\n";
+    $dafnyVerify $files1; 
+    echo "Verifying batch 2/3"
+    echo "$files2" | tr " " "\n";
+    $dafnyVerify $files2; 
+    echo "Verifying batch 3/3"
+    echo "$files3" | tr " " "\n";
+    $dafnyVerify $files3; 
+}
