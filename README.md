@@ -44,6 +44,7 @@ We begin with building our local version of Dafny that contains Basilisk extensi
 	make
 	```
 	This should take less than 20 seconds.
+	Note that you may also be required to install [Java 17](https://www.oracle.com/java/technologies/javase/jdk17-archive-downloads.html) as a dependency for gradle.
 3. To check that Dafny runs as expected, run from the local-dafny directory:
 
 	```bash
