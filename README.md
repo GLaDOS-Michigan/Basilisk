@@ -64,9 +64,10 @@ cd basilisk/
 ./verify-all 
 ```
 
+This script runs the Dafny verifier on each of the protocol. It takes about 5 minutes on an M3 MacBook Pro, while consuming up to 1GB of RAM.
+
 Note that warnings of the form `Warning: /!\ No terms found to trigger on.` can be safely ignored.
 
-This script runs the Dafny verifier on each of the protocol, and takes about 5min on an M3 MacBook Pro.
 
 > [!IMPORTANT]  
 > This step must be completed before moving on to the [Paper Evaluation](#paper-evaluation) section, as it produces auto-generated files required to complete the evaluation.
