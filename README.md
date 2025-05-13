@@ -5,6 +5,8 @@ This is the code base for the Basilisk prototype, as described in the OSDI'25 pa
 
 The paper builds on the concept of an Invariant Taxonomy introduced in [Kondo](https://www.usenix.org/conference/osdi24/presentation/zhang-nuda), and factors the invariants of a distributed protocol into various sub-classes of Regular Invariants. Given a distributed protocol, Basilisk automatically generates a set of Regular invariants that is strong enough to form the *inductive invariant* of the protocol.
 
+A copy of this repository is also hosted on Zenodo ([link](https://doi.org/10.5281/zenodo.15392829)).
+
 ## Project Layout
 
 This artifact has two main directories.
