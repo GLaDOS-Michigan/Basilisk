@@ -129,4 +129,4 @@ cd basilisk/evaluation
 python3 eval.py
 ```
 
-The results are written to the sloc.csv file.
+The results are written to the sloc.csv file, and should match the numbers in Table 1 of the paper.
