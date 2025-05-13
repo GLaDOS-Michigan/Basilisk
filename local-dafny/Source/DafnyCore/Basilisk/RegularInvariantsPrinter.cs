@@ -15,7 +15,8 @@ namespace Microsoft.Dafny
     private static readonly string customInvariantsFile = "customMessageInvariants.dfy";
     private static readonly string customInvariantsModule = "CustomMessageInvariants";
     private static readonly string[] imports = {"Types", "UtilitiesLibrary", "MonotonicityLibrary", "DistributedSystem"};
-    private static readonly string templatePath = "/Users/nudzhang/Documents/UMich2023sp/linear-dist.nosync/local-dafny/Source/DafnyCore/Basilisk/templates.json";
+    private static readonly string DafnyRoot = $"{System.AppDomain.CurrentDomain.BaseDirectory}/../";
+    private static readonly string templatePath = $"{DafnyRoot}/Source/DafnyCore/Basilisk/templates.json";
     
     private static readonly Dictionary<string, string[]> Template = JsonConvert.DeserializeObject<Dictionary<string, string[]>>(File.ReadAllText(templatePath));
 

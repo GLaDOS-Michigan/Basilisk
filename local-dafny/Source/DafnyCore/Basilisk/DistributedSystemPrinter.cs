@@ -12,7 +12,8 @@ public static class DistributedSystemPrinter {
 
   private static readonly string[] Includes = {"../hosts.dfy"};
   private static readonly string[] Imports = {"Types", "UtilitiesLibrary", "Network"};
-  private static readonly string TemplatePath = "/Users/nudzhang/Documents/UMich2023sp/linear-dist.nosync/local-dafny/Source/DafnyCore/Kondo/templates.json";
+  private static readonly string DafnyRoot = $"{System.AppDomain.CurrentDomain.BaseDirectory}/../";
+  private static readonly string TemplatePath = $"{DafnyRoot}/Source/DafnyCore/Kondo/templates.json";
 
   private static readonly Dictionary<string, string[]> Template = JsonConvert.DeserializeObject<Dictionary<string, string[]>>(File.ReadAllText(TemplatePath));
 
