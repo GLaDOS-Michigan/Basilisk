@@ -89,6 +89,14 @@ Basilisk's goal is to relieve developer effort in verifying distributed systems.
 
 The next two section detail how we obtain these numbers.
 
+Before proceeding, please first run:
+
+```
+cd basilisk/
+./verify-all 
+```
+to generate all of the required files.
+
 ### Verifying Claim 1
 
 **Claim:** *User only needs to provide a few simple hints for Basilisk to automatically generate an inductive invariant for each protocol.*
