@@ -112,6 +112,27 @@ Note that Basilisk's use of monotonic variables is identical to Kondo, and hence
 For **provenance hints**, we count the number of predicates defined in the customMessageInvariants.dfy file for protocol (e.g., basilisk/multiPaxos/automate_gen2/customMessageInvariants.dfy).
 Note that only protocols that actually require such hints have such a file in their directory.
 
+The expected counts are:
+
+|                            | Monotonicity<br>annotations | Provenance<br>hints |
+|----------------------------|:---------------------------:|:-------------------:|
+| Echo Server                |                           1 |                   0 |
+| Ring Leader Election       |                           0 |                   0 |
+| Simplified Leader Election |                           1 |                   0 |
+| Paxos                      |                           5 |                   0 |
+| Paxos-combined             |                           5 |                   0 |
+| Paxos-dynamic              |                           4 |                   2 |
+| Flexible Paxos             |                           5 |                   0 |
+| Distributed Lock           |                           0 |                   0 |
+| ShardedKV                  |                           0 |                   0 |
+| ShardedKV-Bactched         |                           0 |                   0 |
+| Lock Server                |                           0 |                   0 |
+| Two-Phase Commit           |                           3 |                   0 |
+| Three-Phase Commit         |                           5 |                   0 |
+| Reduce                     |                           0 |                   0 |
+| Raft Leader Election       |                           1 |                   2 |
+| Multi-Paxos                |                           4 |                   2 |
+
 In contrast, Kondo's use of "Recv hints" is derived from inspecting Kondo's codebase.
 In Kondo, these are predicates in the hosts.dfy file that end with the suffix "trigger" (e.g., `predicate ReceivePromiseTrigger` in [this file](https://github.com/GLaDOS-Michigan/Kondo/blob/main/kondoPrototypes/paxos/hosts.dfy)).
 
@@ -138,3 +159,23 @@ python3 eval.py
 ```
 
 The results are written to the sloc.csv file, and should match the numbers in Table 1 of the paper.
+These numbers are:
+
+|                            | Basilisk<br>safety | Basilisk<br>total | Kondo<br>safety | Kondo<br>total |
+|----------------------------|:------------------:|:-----------------:|:---------------:|:--------------:|
+| Echo Server                |                  8 |                49 |               0 |             40 |
+| Ring Leader Election       |                 80 |               115 |              30 |             63 |
+| Simplified Leader Election |                 45 |                87 |              33 |             94 |
+| Paxos                      |                444 |               486 |             558 |            777 |
+| Paxos-combined             |                445 |               497 |               - |              - |
+| Paxos-dynamic              |                479 |               522 |               - |              - |
+| Flexible Paxos             |                441 |               483 |             559 |            780 |
+| Distributed Lock           |                  0 |                39 |               0 |             31 |
+| ShardedKV                  |                  0 |                39 |              35 |             68 |
+| ShardedKV-Bactched         |                  0 |                38 |               0 |             31 |
+| Lock Server                |                  0 |                38 |              20 |             59 |
+| Two-Phase Commit           |                 95 |               139 |             119 |            186 |
+| Three-Phase Commit         |                108 |               152 |               - |              - |
+| Reduce                     |                 30 |                69 |               - |              - |
+| Raft Leader Election       |                 52 |                93 |               - |              - |
+| Multi-Paxos                |                522 |               565 |               - |              - |
