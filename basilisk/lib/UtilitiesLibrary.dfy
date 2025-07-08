@@ -70,9 +70,15 @@ module UtilitiesLibrary {
       assert |s1| <= |s2|;
     } else {
       var x :| x in s1;
-      var s1' := s1 - {x};
-      SetContainmentCardinality(s1', s2);
-      assume {:axiom} false;
+      if (x in s2) {
+        var s1' := s1 - {x};
+        var s2' := s2 - {x};
+        SetContainmentCardinality(s1', s2');
+        assert |s1| <= |s2|;
+      } else {
+        var s1' := s1 - {x};
+        SetContainmentCardinality(s1', s2);
+      }
     }
   }
 
@@ -80,7 +86,9 @@ module UtilitiesLibrary {
     requires s1 < s2
     ensures |s1| < |s2|
   {
-    assume {:axiom} false;
+    var x :| x in s2 - s1;
+    var s2' := s2 - {x};
+    SetContainmentCardinality(s1, s2');
   }
 
   lemma UnionIncreasesCardinality<T>(s1: set<T>, s2: set<T>) 
@@ -93,7 +101,11 @@ module UtilitiesLibrary {
       var x :| x in s2;
       var s2' := s2 - {x};
       UnionIncreasesCardinality(s1, s2');
-      LargerSetIncreasesCardinalityMore(s1, s2', s2);
+      if (x in s1) {
+        assert s1 + s2 == s1 + s2';
+      } else {
+        assert s1 + s2 == (s1 + s2') + {x};
+      }
       assert |s1 + s2| >= |s1|;
     }
   }
@@ -102,7 +114,32 @@ module UtilitiesLibrary {
     requires s1 <= s2
     ensures |s+s1| <= |s+s2|
   {
-    assume {:axiom} false;  //TODO
+    if (|s| == 0) {
+      SetContainmentCardinality(s1, s2);
+    } else {
+      var x :| x in s;
+      var s' := s - {x};
+      if (x in s1) {
+        assert x in s2;
+        assert s + s1 == s' + s1;
+        var s1' := s1 - {x};
+        var s2' := s2 - {x};
+        LargerSetIncreasesCardinalityMore(s', s1', s2');
+        assert s + s1 == (s' + s1') + {x};
+        assert s + s2 == (s' + s2') + {x};
+      } else {
+        assert s + s1 == (s' + s1) + {x};
+        if (x in s2) {
+          var s2' := s2 - {x};
+          LargerSetIncreasesCardinalityMore(s', s1, s2');
+          assert s' + s2' + {x} == s + s2;
+          assert |s+s1| <= |s+s2|;
+        } else {
+          assert s + s2 == (s' + s2) + {x};
+          LargerSetIncreasesCardinalityMore(s', s1, s2);
+        }
+      }
+    }
   }
 
   ghost function UnionSeqOfSets<T>(theSets: seq<set<T>>) : set<T>
@@ -168,7 +205,16 @@ module UtilitiesLibrary {
     requires S1 * S2 == {}
     ensures |S1| + |S2| == |S1 + S2|
   {
-    assume {:axiom} false;
+    if (|S1| == 0) {
+      assert |S1 + S2| == |S2|;
+    } else {
+      var x :| x in S1;
+      assert x !in S2 by {
+        if (x in S2) {
+          assert x in S1 * S2;
+        }
+      }
+    }
   }
 
   ghost function {:opaque} MapRemoveOne<K,V>(m:map<K,V>, key:K) : (m':map<K,V>)
