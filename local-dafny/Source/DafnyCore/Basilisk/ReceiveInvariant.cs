@@ -12,18 +12,83 @@ namespace Microsoft.Dafny
 {
   public class ReceiveInvariant {
 
+    private class StepConstructorInfo {
+      public string Name { get; }
+      private Dictionary<string, string> FormalTypesByName { get; }
+      private List<string> FormalTypesInOrder { get; }
+
+      public StepConstructorInfo(DatatypeCtor ctor) {
+        Name = ctor.Name;
+        FormalTypesByName = new Dictionary<string, string>();
+        FormalTypesInOrder = new List<string>();
+
+        foreach (var formal in ctor.Formals) {
+          var typeName = formal.Type.ToString();
+          FormalTypesByName[formal.Name] = typeName;
+          FormalTypesInOrder.Add(typeName);
+        }
+      }
+
+      public string GetTypeForName(string formalName) {
+        return FormalTypesByName.TryGetValue(formalName, out var typeName) ? typeName : null;
+      }
+
+      public IEnumerable<string> FormalNames() {
+        return FormalTypesByName.Keys;
+      }
+
+      public string BuildExplicitMatchCase() {
+        var msgOpsIndex = FormalTypesInOrder.FindIndex(typeName => typeName == "MessageOps");
+        if (msgOpsIndex < 0) {
+          return null;
+        }
+
+        var args = new List<string>();
+        for (var i = 0; i < FormalTypesInOrder.Count; i++) {
+          args.Add(i == msgOpsIndex ? "msgOps" : "_");
+        }
+
+        return $"  case {Name}({string.Join(", ", args)}) =>";
+      }
+    }
+
+    private class HelperStepFieldInfo {
+      public string ActorFieldName { get; }
+      public string MsgOpsFieldName { get; }
+
+      public HelperStepFieldInfo(string actorFieldName, string msgOpsFieldName) {
+        ActorFieldName = actorFieldName;
+        MsgOpsFieldName = msgOpsFieldName;
+      }
+    }
+
     private bool opaque;
     private string hostModule;  // name of the module this function belongs
     private string hostField;   // which field in distributedSystem.Hosts?
+    private bool useExplicitBoundaryCase2;
+    private bool omitExplicitBoundaryCatchAll;
+    private bool useNamedHostStepHelper;
+    private string explicitBoundaryCase2Match;
+    private string helperBoundaryActorField;
+    private string helperBoundaryMsgOpsField;
 
-    public ReceiveInvariant(string hostModule, string hostField) {
+    public ReceiveInvariant(string hostModule, string hostField, bool useExplicitBoundaryCase2, bool omitExplicitBoundaryCatchAll, bool useNamedHostStepHelper, string explicitBoundaryCase2Match, string helperBoundaryActorField, string helperBoundaryMsgOpsField) {
       this.opaque = true;
       this.hostModule = hostModule;
       this.hostField = hostField;
+      this.useExplicitBoundaryCase2 = useExplicitBoundaryCase2;
+      this.omitExplicitBoundaryCatchAll = omitExplicitBoundaryCatchAll;
+      this.useNamedHostStepHelper = useNamedHostStepHelper;
+      this.explicitBoundaryCase2Match = explicitBoundaryCase2Match;
+      this.helperBoundaryActorField = helperBoundaryActorField;
+      this.helperBoundaryMsgOpsField = helperBoundaryMsgOpsField;
     }
 
-    public static List<ReceiveInvariant> FromHost(DatatypeDecl dsHosts) {
+    public static List<ReceiveInvariant> FromHost(DatatypeDecl dsHosts, Program program) {
       var res = new List<ReceiveInvariant>();
+      var stepConstructors = GetDistributedSystemStepConstructors(program);
+      var helperStepFieldInfo = GetHelperStepFieldInfo(stepConstructors);
+      var helperPredicateNames = GetDistributedSystemHelperPredicates(program);
 
       foreach (var formal in dsHosts.Ctors[0].Formals) {
         var name = formal.DafnyName;
@@ -36,13 +101,95 @@ namespace Microsoft.Dafny
           // Extract the substring between '<' and '.'
           string hostModule = name.Substring(startIndex, endIndex - startIndex);
           string hostField = name.Substring(0, name.IndexOf(":"));
+          var explicitBoundaryCase2Match = GetExplicitBoundaryCase2Match(stepConstructors, hostModule);
+          var useNamedHostStepHelper = helperStepFieldInfo != null && helperPredicateNames.Contains($"DistributedSystem.Next{hostModule}Step");
 
-          var recvInv = new ReceiveInvariant(hostModule, hostField);
+          var recvInv = new ReceiveInvariant(
+            hostModule,
+            hostField,
+            explicitBoundaryCase2Match != null,
+            explicitBoundaryCase2Match != null && stepConstructors.Count == 1,
+            useNamedHostStepHelper,
+            explicitBoundaryCase2Match,
+            helperStepFieldInfo?.ActorFieldName,
+            helperStepFieldInfo?.MsgOpsFieldName);
           Console.WriteLine(recvInv);
           res.Add(recvInv);
         }
       }
       return res;
+    }
+
+    private static List<StepConstructorInfo> GetDistributedSystemStepConstructors(Program program) {
+      var stepConstructors = new List<StepConstructorInfo>();
+      foreach (var kvp in program.ModuleSigs) {
+        foreach (var topLevelDecl in ModuleDefinition.AllTypesWithMembers(kvp.Value.ModuleDef.TopLevelDecls.ToList())) {
+          if (topLevelDecl.FullDafnyName.Equals("DistributedSystem.Step") && topLevelDecl is DatatypeDecl dt) {
+            foreach (var ctor in dt.Ctors) {
+              stepConstructors.Add(new StepConstructorInfo(ctor));
+            }
+            return stepConstructors;
+          }
+        }
+      }
+      return stepConstructors;
+    }
+
+    private static string GetExplicitBoundaryCase2Match(List<StepConstructorInfo> stepConstructors, string hostModule) {
+      var exactCtor = stepConstructors.FirstOrDefault(ctor => ctor.Name == $"{hostModule}Step");
+      return exactCtor?.BuildExplicitMatchCase();
+    }
+
+    private static HelperStepFieldInfo GetHelperStepFieldInfo(List<StepConstructorInfo> stepConstructors) {
+      if (stepConstructors.Count == 0) {
+        return null;
+      }
+
+      var commonFields = new Dictionary<string, string>();
+      foreach (var formalName in stepConstructors[0].FormalNames()) {
+        var typeName = stepConstructors[0].GetTypeForName(formalName);
+        if (stepConstructors.All(ctor => ctor.GetTypeForName(formalName) == typeName)) {
+          commonFields[formalName] = typeName;
+        }
+      }
+
+      var msgOpsFields = commonFields
+        .Where(kvp => kvp.Value == "MessageOps")
+        .Select(kvp => kvp.Key)
+        .ToList();
+      if (msgOpsFields.Count != 1) {
+        return null;
+      }
+
+      var msgOpsFieldName = msgOpsFields[0];
+      var actorCandidates = commonFields.Keys
+        .Where(name => name != msgOpsFieldName)
+        .ToList();
+      if (actorCandidates.Count == 0) {
+        return null;
+      }
+
+      string actorFieldName = null;
+      var preferredActorFields = actorCandidates
+        .Where(name => name.IndexOf("actor", StringComparison.OrdinalIgnoreCase) >= 0)
+        .ToList();
+      if (preferredActorFields.Count == 1) {
+        actorFieldName = preferredActorFields[0];
+      } else if (actorCandidates.Count == 1) {
+        actorFieldName = actorCandidates[0];
+      }
+
+      return actorFieldName == null ? null : new HelperStepFieldInfo(actorFieldName, msgOpsFieldName);
+    }
+
+    private static ISet<string> GetDistributedSystemHelperPredicates(Program program) {
+      var helperPredicateNames = new HashSet<string>();
+      foreach (var kvp in program.ModuleSigs) {
+        foreach (var topLevelDecl in ModuleDefinition.AllFunctions(kvp.Value.ModuleDef.TopLevelDecls.ToList())) {
+          helperPredicateNames.Add(topLevelDecl.FullDafnyName);
+        }
+      }
+      return helperPredicateNames;
     }
 
     public bool Opaque {
@@ -62,15 +209,43 @@ namespace Microsoft.Dafny
     }
 
     public string ToLemma() {
-      var res = "";
-      res += string.Format(RegularInvPrinter.GetFromTemplate("HostReceiveSkolemization", 0), hostModule, hostField, GetPredicateName());
-      res += "\n";
-      res += string.Format(RegularInvPrinter.GetFromTemplate("InvNextHostReceiveValidity", 0), hostModule, hostField);
-      return res;
+      var res = new System.Text.StringBuilder();
+      res.Append(string.Format(RegularInvPrinter.GetFromTemplate("HostReceiveSkolemizationFromPost", 0), hostModule, hostField));
+      res.AppendLine();
+      res.Append(string.Format(RegularInvPrinter.GetFromTemplate("HostReceiveSkolemization", 0), hostModule, hostField));
+      res.AppendLine();
+      res.Append(string.Format(RegularInvPrinter.GetFromTemplate("InvNextHostReceiveValidityPostStrict", 0), hostModule, hostField));
+      res.AppendLine();
+      if (useExplicitBoundaryCase2) {
+        var boundaryTemplate = omitExplicitBoundaryCatchAll
+          ? "InvNextHostReceiveValidityPostBoundarySingleConstructor"
+          : "InvNextHostReceiveValidityPostBoundary";
+        res.Append(string.Format(RegularInvPrinter.GetFromTemplate(boundaryTemplate, 0), hostModule, hostField, explicitBoundaryCase2Match));
+      } else if (useNamedHostStepHelper) {
+        res.Append(string.Format(RegularInvPrinter.GetFromTemplate("InvNextHostReceiveValidityPostBoundaryHelper", 0), hostModule, hostField, helperBoundaryActorField, helperBoundaryMsgOpsField));
+      } else {
+        res.Append(string.Format(RegularInvPrinter.GetFromTemplate("InvNextHostReceiveValidityPostBoundaryFallback", 0), hostModule, hostField));
+      }
+      res.AppendLine();
+      res.Append(string.Format(RegularInvPrinter.GetFromTemplate("InvNextHostReceiveValidityPost", 0), hostModule, hostField));
+      res.AppendLine();
+      res.Append(string.Format(RegularInvPrinter.GetFromTemplate("InvNextHostReceiveValidityForall", 0), hostModule, hostField));
+      res.AppendLine();
+      res.Append(string.Format(RegularInvPrinter.GetFromTemplate("InvNextHostReceiveValidity", 0), hostModule, hostField));
+      return res.ToString();
     }
 
     public override string ToString() {
-      return string.Format("Receive invariant for [{0}], in DistributedSystem.hosts.[{1}]\n", hostModule, hostField);
+      return string.Format(
+        "Receive invariant for [{0}], in DistributedSystem.hosts.[{1}] (explicit BoundaryCase2: {2}, omit catch-all: {3}, helper BoundaryCase2: {4}, exact match: {5}, helper fields: {6}/{7})\n",
+        hostModule,
+        hostField,
+        useExplicitBoundaryCase2,
+        omitExplicitBoundaryCatchAll,
+        useNamedHostStepHelper,
+        explicitBoundaryCase2Match,
+        helperBoundaryActorField,
+        helperBoundaryMsgOpsField);
     }
   } // end class ReceiveInvariant
 
