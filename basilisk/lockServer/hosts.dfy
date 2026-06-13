@@ -163,7 +163,7 @@ module ServerHost {
     && v.WF(c)
     && match step
       case GrantStep => NextGrantStep(c, v, v', msgOps)
-      case ReleaseStep => NextReceiveStep2(c, v, v', msgOps)
+      case ReceiveStep => NextReceiveStep2(c, v, v', msgOps)
   }
 
   ghost predicate NextGrantStep(c: Constants, v: Variables, v': Variables, msgOps: MessageOps) 
