@@ -61,37 +61,50 @@ lemma InvInductive(c: Constants, v: Variables, v': Variables)
 // BEGIN SAFETY PROOF
 
 // We allow safety to be proven inductively
-lemma {:timeLimitMultiplier 2} SafetyProof(c: Constants, v: Variables, v': Variables)
+lemma SafetyProof(c: Constants, v: Variables, v': Variables)
   requires Inv(c, v)
   requires Next(c, v, v')
   requires RegularInvs(c, v')
   ensures Safety(c, v')
 {
-  if !AtMostOneChosenVal(c, v') {
-    var vb1, vb2 :| Chosen(c, v'.Last(), vb1) && Chosen(c, v'.Last(), vb2)
+  SafetyProofAtMostOneChosenVal(c, v');
+  AtMostOneChosenImpliesSafety(c, v');
+}
+
+lemma SafetyProofAtMostOneChosenVal(c: Constants, v: Variables)
+  requires RegularInvs(c, v)
+  ensures AtMostOneChosenVal(c, v)
+{
+  if !AtMostOneChosenVal(c, v) {
+    var vb1, vb2 :| Chosen(c, v.Last(), vb1) && Chosen(c, v.Last(), vb2)
                     && !( && c.ValidLeaderIdx(vb1.b)
                           && c.ValidLeaderIdx(vb2.b)
                           && vb1.v == vb2.v);
-    ChosenImpliesValidBallot(c, v', |v'.history|-1, vb1);
-    ChosenImpliesValidBallot(c, v', |v'.history|-1, vb2);
-    // assert vb1.v != vb2.v;
-
-    if vb1.b < vb2.b {
-      var propMsg := ChosenImpliesProposed(c, v', |v'.history|-1, vb2);
-      var promQ, hb := GetPromiseQuorumForProposeMessage(c, v', vb1, propMsg, vb2.b, vb2.v);
-      SafetyProofBallotInduction(c, v', vb1, vb2, promQ, hb);
-    } else if vb1.b > vb2.b {
-      var propMsg := ChosenImpliesProposed(c, v', |v'.history|-1, vb1);
-      var promQ, hb := GetPromiseQuorumForProposeMessage(c, v', vb2, propMsg, vb1.b, vb1.v);
-      SafetyProofBallotInduction(c, v', vb2, vb1, promQ, hb);
-    } else {
-      // Proves that at most one chosen value at each ballot
-      var propMsg1 := ChosenImpliesProposed(c, v', |v'.history|-1, vb1);
-      var propMsg2 := ChosenImpliesProposed(c, v', |v'.history|-1, vb2);
-    }
-    // assert false;  // trigger
+    ChosenImpliesValidBallot(c, v, |v.history|-1, vb1);
+    ChosenImpliesValidBallot(c, v, |v.history|-1, vb2);
+    SafetyProofWitnessesAgree(c, v, vb1, vb2);
   }
-  AtMostOneChosenImpliesSafety(c, v');
+}
+
+lemma SafetyProofWitnessesAgree(c: Constants, v: Variables, vb1: ValBal, vb2: ValBal)
+  requires RegularInvs(c, v)
+  requires Chosen(c, v.Last(), vb1)
+  requires Chosen(c, v.Last(), vb2)
+  ensures vb1.v == vb2.v
+{
+  if vb1.b < vb2.b {
+    var propMsg := ChosenImpliesProposed(c, v, |v.history|-1, vb2);
+    var promQ, hb := GetPromiseQuorumForProposeMessage(c, v, vb1, propMsg);
+    SafetyProofBallotInduction(c, v, vb1, vb2, promQ, hb);
+  } else if vb1.b > vb2.b {
+    var propMsg := ChosenImpliesProposed(c, v, |v.history|-1, vb1);
+    var promQ, hb := GetPromiseQuorumForProposeMessage(c, v, vb2, propMsg);
+    SafetyProofBallotInduction(c, v, vb2, vb1, promQ, hb);
+  } else {
+    var propMsg1 := ChosenImpliesProposed(c, v, |v.history|-1, vb1);
+    var propMsg2 := ChosenImpliesProposed(c, v, |v.history|-1, vb2);
+    assert propMsg1.val == propMsg2.val;  // trigger
+  }
 }
 
 lemma ChosenImpliesValidBallot(c: Constants, v: Variables, i: nat, vb: ValBal)
@@ -114,52 +127,53 @@ lemma SafetyProofBallotInduction(c: Constants, v: Variables, vb1: ValBal, vb2: V
   requires IsPromiseQuorum(c, v, promQ, vb2.b)
   requires PromiseSetHighestVB(c, v, promQ, vb2.b, VB(vb2.v, hb))
   requires vb1.b <= hb < vb2.b
-  requires vb1.b < vb2.b
   ensures vb1.v == vb2.v
   decreases vb2.b
 {
   /* Proof sketch:
-      vb1 has a quorum of Accept messages. Hence, every acceptor in vb1 has accepted some
-      ballot at least as large as b1.
-
-      vb2 has a quorum of Promise messages. Hence, every acceptor in vb2 has promised some
-      ballot at least as large as b2. 
-
-      vb2 Promise quorum shares an acceptor with vb1 accept quorum. As such, the Promise
-      quorum's highest witnessed accept ballot hb must be in the range vb1.b <= hb < vb2.b.
-
-      Consider an induction on ballot number:
-      1. The witnessed accept at hb has value vb1. Then we are done.
-      
-      2. Else, there is an Accept message for (vb2.v, hb) Then there is a hb promise quorum
-         with value vb2.v. Recursively descend b3 to get contradiction.
+      - Base case: the winning promise message at hb already carries vb1.v.
+      - Step case: relate chosen(vb1) to promQ via an intersecting acceptor, then
+        skolemize the propose behind hm and either discharge hb==vb1.b directly
+        or recurse on strictly smaller hb.
   */
-
   var hm :| WinningPromiseMessageInQuorum(c, v, promQ, vb2.b, VB(vb2.v, hb), hm);
   if hm.vbOpt.value.v == vb1.v {
     return;  // base case
-  } else {
-    // Obtain fact that vb1.b <= hb
-    var vb1witness := ChosenImpliesSeenByHigherPromiseQuorum(c, v, vb1, vb2.b, promQ);
+  }
 
-    // Skolemize the Propose message associated with hm
-    var promiser := hm.Src();
-    var i, _ := SendPromiseSkolemization(c, v, hm);
-    reveal_ValidHistory();
-    var _, propMsg, _ := ReceiveProposeSendAcceptStepSkolemization(c, v, i, promiser, MVBSome(VB(vb2.v, hb)));
-    
-    if hb == vb1.b {
-      // hb is highest ballot seen by vb2.b promise quorum
-      // vb1.b is the chosen ballot. 
-      // Want to show that witnessed value is vb1.v
-      var propMsg1 := ChosenImpliesProposed(c, v, |v.history|-1, vb1);      
-      assert propMsg.val == propMsg1.val;     // trigger
-      // assert false;
-    } else {
-      // Do induction
-      var nq, nb := GetPromiseQuorumForProposeMessage(c, v, vb1, propMsg, hb, vb2.v);
-      SafetyProofBallotInduction(c, v, vb1, VB(vb2.v, hb), nq, nb);
-    }
+  SafetyProofBallotInductionStep(c, v, vb1, vb2, promQ, hb, hm);
+}
+
+lemma SafetyProofBallotInductionStep(c: Constants, v: Variables, vb1: ValBal, vb2: ValBal, promQ: set<Message>, hb: LeaderId, hm: Message)
+  requires RegularInvs(c, v)
+  requires Chosen(c, v.Last(), vb1)
+  requires IsPromiseQuorum(c, v, promQ, vb2.b)
+  requires vb1.b <= hb < vb2.b
+  requires WinningPromiseMessageInQuorum(c, v, promQ, vb2.b, VB(vb2.v, hb), hm)
+  requires hm.vbOpt.value.v != vb1.v
+  ensures vb1.v == vb2.v
+  decreases vb2.b, 0
+{
+  // Non-base branch of ballot induction: establish the recursive witness path.
+  // Obtain fact that vb1.b <= hb
+  var _ := ChosenImpliesSeenByHigherPromiseQuorum(c, v, vb1, vb2.b, promQ);
+
+  // Skolemize the Propose message associated with hm
+  var promiser := hm.Src();
+  var i, _ := SendPromiseSkolemization(c, v, hm);
+  reveal_ValidHistory();
+  var _, propMsg, _ := ReceiveProposeSendAcceptStepSkolemization(c, v, i, promiser, MVBSome(VB(vb2.v, hb)));
+
+  if hb == vb1.b {
+    // hb is highest ballot seen by vb2.b promise quorum
+    // vb1.b is the chosen ballot.
+    // Want to show that witnessed value is vb1.v
+    var propMsg1 := ChosenImpliesProposed(c, v, |v.history|-1, vb1);
+    assert propMsg.val == propMsg1.val;     // trigger
+  } else {
+    // Do induction
+    var nq, nb := GetPromiseQuorumForProposeMessage(c, v, vb1, propMsg);
+    SafetyProofBallotInduction(c, v, vb1, VB(vb2.v, hb), nq, nb);
   }
 }
 
@@ -235,8 +249,10 @@ returns (accId: AcceptorId)
 {
   var prAccs := AcceptorsFromPromiseSet(c, v, promQ, promBal);
   var acAccs := AcceptorsFromAcceptSet(c, v, accQ, accVB);
-  var allAccs := set id | 0 <= id < c.n;
   SetComprehensionSize(c.n);
+  var allAccs := (set id: int {:trigger Identity(id)} | 0 <= id < c.n :: id);
+  assert forall prAcc, acAcc | prAcc in prAccs && acAcc in acAccs :: Identity(prAcc) in allAccs && Identity(acAcc) in allAccs;
+
   var commonAcc := QuorumIntersection(allAccs , prAccs, acAccs);
   return commonAcc;
 }
@@ -283,7 +299,7 @@ returns (acceptMsgs: set<Message>)
   requires vb in v.Last().learners[lnr].receivedAccepts.m
   requires receivedAccepts <= v.Last().learners[lnr].receivedAccepts.m[vb]
   ensures |acceptMsgs| == |receivedAccepts|
-  ensures forall m | m in acceptMsgs :: IsAcceptMessage(v, m) && m.vb == vb
+  ensures forall m | m in acceptMsgs :: IsAcceptMessage(v, m) && m.vb == vb && (m.Promise? || m.Accept?)
   ensures MessageSetDistinctAccs(acceptMsgs)
   ensures forall acc :: acc in receivedAccepts <==> Accept(vb, acc) in acceptMsgs
   decreases receivedAccepts
@@ -300,84 +316,128 @@ returns (acceptMsgs: set<Message>)
   }
 }
 
-lemma GetPromiseQuorumForProposeMessage(c: Constants, v: Variables, chosenVB: ValBal, propMsg: Message, bal: LeaderId, val: Value)
+lemma GetPromiseQuorumForProposeMessage(c: Constants, v: Variables, chosenVB: ValBal, propMsg: Message)
 returns (promQ: set<Message>, hb: LeaderId)
   requires RegularInvs(c, v)
   requires Chosen(c, v.Last(), chosenVB)
   requires IsProposeMessage(v, propMsg)
-  requires propMsg.val == val
-  requires propMsg.bal == bal
-  requires chosenVB.b < bal
-  ensures IsPromiseQuorum(c, v, promQ, bal)
-  ensures PromiseSetHighestVB(c, v, promQ, bal, VB(val, hb))
-  ensures chosenVB.b <= hb < bal
+  requires chosenVB.b < propMsg.bal
+  ensures IsPromiseQuorum(c, v, promQ, propMsg.bal)
+  ensures PromiseSetHighestVB(c, v, promQ, propMsg.bal, VB(propMsg.val, hb))
+  ensures chosenVB.b <= hb
+  ensures hb < propMsg.bal
 {
+  var bal := propMsg.bal;
   var i :|  && v.ValidHistoryIdxStrict(i)
             && LeaderHost.SendPropose(c.leaders[bal], v.History(i).leaders[bal], v.History(i+1).leaders[bal], propMsg);
-  var hm : Message;
+
   promQ := HighestHeardBackedByReceivedPromises(c, v, i, bal);
   var choosingWitness := ChosenImpliesSeenByHigherPromiseQuorum(c, v, chosenVB, bal, promQ);
-  hm :| WinningPromiseMessageInQuorum(c, v, promQ, bal, VB(v.History(i).leaders[bal].Value(), v.History(i).leaders[bal].highestHeardBallot.value), hm);
-  hb := hm.vbOpt.value.b;
+  assert choosingWitness in promQ;
+
+  hb := v.History(i).leaders[bal].highestHeardBallot.value;
+
+  assert chosenVB.b <= hb by {
+    var highestMsg :| WinningPromiseMessageInQuorum(c, v, promQ, bal, VB(propMsg.val, hb), highestMsg);
+    assert choosingWitness.vbOpt.value.b <= highestMsg.vbOpt.value.b;
+  }
 }
 
-lemma {:timeLimitMultiplier 2} HighestHeardBackedByReceivedPromises(c: Constants, v: Variables, i: nat, idx: LeaderId)
+lemma HighestHeardBackedByReceivedPromises(c: Constants, v: Variables, i: nat, idx: LeaderId)
 returns (promS: set<Message>)
   requires RegularInvs(c, v)
   requires v.ValidHistoryIdx(i)
   requires c.ValidLeaderIdx(idx)
   ensures LeaderPromiseSetProperties(c, v, i, idx, promS)
 {
-  promS := {};
+  var ldr := v.History(i).leaders[idx];
+  var hbal := ldr.highestHeardBallot;
+  if hbal.MNSome? {
+    promS := HighestHeardBackedByReceivedPromisesSome(c, v, i, idx);
+  } else {
+    promS := HighestHeardBackedByReceivedPromisesNone(c, v, i, idx);
+  }
+}
 
+lemma HighestHeardBackedByReceivedPromisesSome(c: Constants, v: Variables, i: nat, idx: LeaderId)
+returns (promS: set<Message>)
+  requires RegularInvs(c, v)
+  requires v.ValidHistoryIdx(i)
+  requires c.ValidLeaderIdx(idx)
+  requires v.History(i).leaders[idx].highestHeardBallot.MNSome?
+  ensures LeaderPromiseSetProperties(c, v, i, idx, promS)
+{
+  promS := {};
   var ldr := v.History(i).leaders[idx];
   var hbal := ldr.highestHeardBallot;
 
   var accs :=  ldr.ReceivedPromises();
   reveal_MessageSetDistinctAccs();
 
-  if hbal.MNSome? {
+  reveal_ValidHistory();
+  var j, hm := ReceivePromise2StepSkolemization(c, v, i, idx, ldr.receivedPromisesAndValue.value, hbal);
+  assert ReceivePromise2WitnessCondition(c, v, j+1, idx, ldr.Value(), hbal);
+  assert hm.vbOpt == Some(VB(ldr.Value(), hbal.value));
+  promS := promS + {hm};
+  accs := accs - {hm.acc};
+  assert MessageSetDistinctAccs(promS);  // trigger
+  while |accs| > 0
+    invariant |promS| + |accs| == |ldr.ReceivedPromises()|
+    invariant forall p | p in promS :: p.Promise?
+    invariant forall acc | acc in accs :: (forall m | m in promS :: m.acc != acc)
+    invariant IsPromiseSet(c, v, promS, idx)
+    invariant hm in promS
+    invariant hm.vbOpt == Some(VB(ldr.Value(), hbal.value))
+    invariant forall p | p in promS && p.vbOpt.Some? :: p.vbOpt.value.b <= hbal.value
+    decreases accs
+  {
+    var acc :| acc in accs;
+    var p := PromiseMessageExistence(c, v, i, idx, acc);
+    assert p.Promise?;
+    assert p.bal == idx;
+    assert forall m | m in promS :: m.acc != p.acc;
+    if p.vbOpt.Some? {
+      assert p.vbOpt.value.b <= hbal.value;
+    }
+    promS := promS + {p};
+    accs := accs - {acc};
+    assert MessageSetDistinctAccs(promS);  // trigger
+  }
+  assert WinningPromiseMessageInQuorum(c, v, promS, idx, VB(ldr.Value(), hbal.value), hm);
+}
+
+lemma HighestHeardBackedByReceivedPromisesNone(c: Constants, v: Variables, i: nat, idx: LeaderId)
+returns (promS: set<Message>)
+  requires RegularInvs(c, v)
+  requires v.ValidHistoryIdx(i)
+  requires c.ValidLeaderIdx(idx)
+  requires v.History(i).leaders[idx].highestHeardBallot.MNNone?
+  ensures LeaderPromiseSetProperties(c, v, i, idx, promS)
+{
+  promS := {};
+  var ldr := v.History(i).leaders[idx];
+  var hbal := ldr.highestHeardBallot;
+
+  var accs :=  ldr.ReceivedPromises();
+  reveal_MessageSetDistinctAccs();
+
+  assert MessageSetDistinctAccs(promS);  // trigger
+  while |accs| > 0
+    invariant |promS| + |accs| == |ldr.ReceivedPromises()|
+    invariant forall p | p in promS :: p.Promise?
+    invariant forall acc | acc in accs :: (forall m | m in promS :: m.acc != acc)
+    invariant IsPromiseSet(c, v, promS, idx)
+    invariant hbal.MNNone? ==> PromiseSetEmptyVB(c, v, promS, idx)
+    invariant MessageSetDistinctAccs(promS)
+    invariant forall p: Message | p in promS :: p.acc in ldr.ReceivedPromises()
+    decreases accs
+  {
+    var acc :| acc in accs;
     reveal_ValidHistory();
-    var j, hm := ReceivePromise2StepSkolemization(c, v, i, idx, ldr.receivedPromisesAndValue.value, hbal);
-    promS := promS + {hm};
-    accs := accs - {hm.acc};
+    var p := PromiseMessageExistence(c, v, i, idx, acc);
+    promS := promS + {p};
+    accs := accs - {acc};
     assert MessageSetDistinctAccs(promS);  // trigger
-    while |accs| > 0 
-      invariant |promS| + |accs| == |ldr.ReceivedPromises()|
-      invariant forall p | p in promS :: p.Promise?
-      invariant forall acc | acc in accs :: (forall m | m in promS :: m.acc != acc)
-      invariant IsPromiseSet(c, v, promS, idx)
-      invariant hbal.MNNone? ==> PromiseSetEmptyVB(c, v, promS, idx)
-      invariant MessageSetDistinctAccs(promS)
-      invariant forall p: Message | p in promS :: p.acc in ldr.ReceivedPromises()
-      invariant WinningPromiseMessageInQuorum(c, v, promS, idx, VB(ldr.Value(), hbal.value), hm)
-      decreases accs
-    {
-      var acc :| acc in accs;
-      var p := PromiseMessageExistence(c, v, i, idx, acc);
-      promS := promS + {p};
-      accs := accs - {acc};
-      assert MessageSetDistinctAccs(promS);  // trigger
-    }
-  } else {
-    assert MessageSetDistinctAccs(promS);  // trigger
-    while |accs| > 0 
-      invariant |promS| + |accs| == |ldr.ReceivedPromises()|
-      invariant forall p | p in promS :: p.Promise?
-      invariant forall acc | acc in accs :: (forall m | m in promS :: m.acc != acc)
-      invariant IsPromiseSet(c, v, promS, idx)
-      invariant hbal.MNNone? ==> PromiseSetEmptyVB(c, v, promS, idx)
-      invariant MessageSetDistinctAccs(promS)
-      invariant forall p: Message | p in promS :: p.acc in ldr.ReceivedPromises()
-      decreases accs
-    {
-      var acc :| acc in accs;
-      reveal_ValidHistory();
-      var p := PromiseMessageExistence(c, v, i, idx, acc);
-      promS := promS + {p};
-      accs := accs - {acc};
-      assert MessageSetDistinctAccs(promS);  // trigger
-    }
   }
 }
 

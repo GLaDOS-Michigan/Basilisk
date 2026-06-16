@@ -68,40 +68,51 @@ lemma SafetyProof(c: Constants, v: Variables, v': Variables)
   requires RegularInvs(c, v')
   ensures Safety(c, v')
 {
-  if !AtMostOneChosenValAllSlots(c, v') {
-    var badSlot, vb1, vb2 :| 
-                    && c.ValidSlot(badSlot)
-                    && ChosenAtSlot(c, v'.Last(), vb1, badSlot) 
-                    && ChosenAtSlot(c, v'.Last(), vb2, badSlot)
-                    && !( && c.ValidHostIdx(vb1.b.id)
-                          && c.ValidHostIdx(vb2.b.id)
-                          && vb1.v == vb2.v);
-    ChosenImpliesValidBallot(c, v', |v'.history|-1, vb1, badSlot);
-    ChosenImpliesValidBallot(c, v', |v'.history|-1, vb2, badSlot);
-    assert vb1.v != vb2.v;
-
-    // vb1.b < vb2.b
-    if BalLt(vb1.b, vb2.b) {
-      var propMsg := ChosenImpliesProposed(c, v', |v'.history|-1, vb2, badSlot);
-      var promQ, hb := GetPromiseQuorumForProposeMessage(c, v', vb1, propMsg, vb2.b, vb2.v);
-      SafetyProofBallotInduction(c, v', vb1, vb2, promQ, hb, badSlot);
-    } // vb1.b > vb2.b 
-    else if BalLt(vb2.b, vb1.b) {
-      var propMsg := ChosenImpliesProposed(c, v', |v'.history|-1, vb1, badSlot);
-      var promQ, hb := GetPromiseQuorumForProposeMessage(c, v', vb2, propMsg, vb1.b, vb1.v);
-      SafetyProofBallotInduction(c, v', vb2, vb1, promQ, hb, badSlot);
-    } else {
-      // Proves that at most one chosen value at each ballot
-      var propMsg1 := ChosenImpliesProposed(c, v', |v'.history|-1, vb1, badSlot);
-      var propMsg2 := ChosenImpliesProposed(c, v', |v'.history|-1, vb2, badSlot);
-      assert propMsg1.val == propMsg2.val;  // trigger
-    }
-    assert false;  // trigger
-  }
+  SafetyProofAtMostOneChosenValAllSlots(c, v');
   AtMostOneChosenImpliesSafety(c, v');
 }
 
-lemma {:timeLimitMultiplier 2} SafetyProofBallotInduction(c: Constants, v: Variables, vb1: ValBal, vb2: ValBal, promQ: set<Message>, hb: Ballot, slot: nat)
+lemma SafetyProofAtMostOneChosenValAllSlots(c: Constants, v: Variables)
+  requires RegularInvs(c, v)
+  ensures AtMostOneChosenValAllSlots(c, v)
+{
+  if !AtMostOneChosenValAllSlots(c, v) {
+    var badSlot, vb1, vb2 :|
+                    && c.ValidSlot(badSlot)
+                    && ChosenAtSlot(c, v.Last(), vb1, badSlot)
+                    && ChosenAtSlot(c, v.Last(), vb2, badSlot)
+                    && !( && c.ValidHostIdx(vb1.b.id)
+                          && c.ValidHostIdx(vb2.b.id)
+                          && vb1.v == vb2.v);
+    ChosenImpliesValidBallot(c, v, |v.history|-1, vb1, badSlot);
+    ChosenImpliesValidBallot(c, v, |v.history|-1, vb2, badSlot);
+    SafetyProofWitnessesAgreeAtSlot(c, v, vb1, vb2, badSlot);
+  }
+}
+
+lemma SafetyProofWitnessesAgreeAtSlot(c: Constants, v: Variables, vb1: ValBal, vb2: ValBal, slot: nat)
+  requires RegularInvs(c, v)
+  requires c.ValidSlot(slot)
+  requires ChosenAtSlot(c, v.Last(), vb1, slot)
+  requires ChosenAtSlot(c, v.Last(), vb2, slot)
+  ensures vb1.v == vb2.v
+{
+  if BalLt(vb1.b, vb2.b) {
+    var propMsg := ChosenImpliesProposed(c, v, |v.history|-1, vb2, slot);
+    var promQ, hb := GetPromiseQuorumForProposeMessage(c, v, vb1, propMsg);
+    SafetyProofBallotInduction(c, v, vb1, vb2, promQ, hb, slot);
+  } else if BalLt(vb2.b, vb1.b) {
+    var propMsg := ChosenImpliesProposed(c, v, |v.history|-1, vb1, slot);
+    var promQ, hb := GetPromiseQuorumForProposeMessage(c, v, vb2, propMsg);
+    SafetyProofBallotInduction(c, v, vb2, vb1, promQ, hb, slot);
+  } else {
+    var propMsg1 := ChosenImpliesProposed(c, v, |v.history|-1, vb1, slot);
+    var propMsg2 := ChosenImpliesProposed(c, v, |v.history|-1, vb2, slot);
+    assert propMsg1.val == propMsg2.val;  // trigger
+  }
+}
+
+lemma SafetyProofBallotInduction(c: Constants, v: Variables, vb1: ValBal, vb2: ValBal, promQ: set<Message>, hb: Ballot, slot: nat)
   requires RegularInvs(c, v)
   // Pre-conditions on arguments
   requires c.ValidSlot(slot)
@@ -113,102 +124,171 @@ lemma {:timeLimitMultiplier 2} SafetyProofBallotInduction(c: Constants, v: Varia
   requires BalLt(hb, vb2.b)
   // Post-conditions
   ensures vb1.v == vb2.v
-  decreases vb2.b.x
-  decreases vb2.b.id
+  decreases vb2.b.x, vb2.b.id, 2
 {
   /* Proof sketch:
-      vb1 has a quorum of Accept messages. Hence, every acceptor in vb1 has accepted some
-      ballot at least as large as b1.
-
-      vb2 has a quorum of Promise messages. Hence, every acceptor in vb2 has promised some
-      ballot at least as large as b2. 
-
-      vb2 Promise quorum shares an acceptor with vb1 accept quorum. As such, the Promise
-      quorum's highest witnessed accept ballot hb must be in the range vb1.b <= hb < vb2.b.
-
-      Consider an induction on ballot number:
-      1. The witnessed accept at hb has value vb1. Then we are done.
-      
-      2. Else, there is an Accept message for (vb2.v, hb) Then there is a hb promise quorum
-         with value vb2.v. Recursively descend b3 to get contradiction.
+      - Base case: the winning slot-promise message at hb already carries vb1.v.
+      - Step case: relate chosen-at-slot(vb1) to promQ via an intersecting host,
+        skolemize the propose behind hm, and either discharge hb==vb1.b directly
+        or recurse on strictly smaller hb.
   */
-
   var hm :| WinningPromiseMessageInSlotQuorum(c, v, promQ, vb2.b, slot, VB(vb2.v, hb), hm);
   if hm.logAcceptedVB.vbOptSeq[slot].value.v == vb1.v {
     return;  // base case
-  } else {
-    // Obtain fact that vb1.b <= hb
-    var vb1witness := ChosenImpliesSeenByHigherPromiseQuorum(c, v, vb1, vb2.b, promQ, slot);
+  }
 
-    // Skolemize the Propose message associated with hm
-    var promiser := hm.Src();
-    var i, _ := SendPromiseSkolemization(c, v, hm);
-    reveal_ValidHistory();
-    var _, propMsg, _ := ReceiveProposeSendAcceptStepSkolemization(c, v, i, promiser, slot, Some(VB(vb2.v, hb)));
-    
-    if hb == vb1.b {
-      // hb is highest ballot seen by vb2.b promise quorum
-      // vb1.b is the chosen ballot. 
-      // Want to show that witnessed value is vb1.v
-      var propMsg1 := ChosenImpliesProposed(c, v, |v.history|-1, vb1, slot);      
-      assert propMsg.val == propMsg1.val;     // trigger
-      assert false;
-    } else {
-      // Do induction
-      var nq, nb := GetPromiseQuorumForProposeMessage(c, v, vb1, propMsg, hb, vb2.v);
-      SafetyProofBallotInduction(c, v, vb1, VB(vb2.v, hb), nq, nb, slot);
-    }
+  SafetyProofBallotInductionStep(c, v, vb1, vb2, promQ, hb, slot, hm);
+}
+
+lemma SafetyProofBallotInductionStep(c: Constants, v: Variables, vb1: ValBal, vb2: ValBal, promQ: set<Message>, hb: Ballot, slot: nat, hm: Message)
+  requires RegularInvs(c, v)
+  requires c.ValidSlot(slot)
+  requires ChosenAtSlot(c, v.Last(), vb1, slot)
+  requires IsPromiseQuorum(c, v, promQ, vb2.b)
+  requires BalLteq(vb1.b, hb)
+  requires BalLt(hb, vb2.b)
+  requires WinningPromiseMessageInSlotQuorum(c, v, promQ, vb2.b, slot, VB(vb2.v, hb), hm)
+  requires hm.logAcceptedVB.vbOptSeq[slot].value.v != vb1.v
+  ensures vb1.v == vb2.v
+  decreases vb2.b.x, vb2.b.id, 1
+{
+  // Skolemize the Propose message associated with hm
+  var promiser := hm.Src();
+  var i, _ := SendPromiseSkolemization(c, v, hm);
+  reveal_ValidHistory();
+  var j, propMsg, outMsg := ReceiveProposeSendAcceptStepSkolemization(c, v, i, promiser, slot, Some(VB(vb2.v, hb)));
+  assert Host.ReceiveProposeSendAccept(c.hosts[promiser], v.History(j).hosts[promiser], v.History(j+1).hosts[promiser], propMsg, outMsg);
+  assert propMsg == Propose(slot, hb, vb2.v);
+  assert IsProposeMessage(v, propMsg);
+
+  if hb == vb1.b {
+    SafetyProofBallotInductionBaseCase(c, v, vb1, vb2, hb, slot, propMsg);
+  } else {
+    SafetyProofBallotInductionRecursiveCase(c, v, vb1, vb2, hb, slot, propMsg);
   }
 }
 
-lemma {:timeLimitMultiplier 2} GetPromiseQuorumForProposeMessage(c: Constants, v: Variables, chosenVB: ValBal, propMsg: Message, bal: Ballot, val: Value)
+lemma SafetyProofBallotInductionBaseCase(c: Constants, v: Variables, vb1: ValBal, vb2: ValBal, hb: Ballot, slot: nat, propMsg: Message)
+  requires RegularInvs(c, v)
+  requires c.ValidSlot(slot)
+  requires ChosenAtSlot(c, v.Last(), vb1, slot)
+  requires hb == vb1.b
+  requires IsProposeMessage(v, propMsg)
+  requires propMsg == Propose(slot, hb, vb2.v)
+  ensures vb1.v == vb2.v
+{
+  var propMsg1 := ChosenImpliesProposed(c, v, |v.history|-1, vb1, slot);
+  assert propMsg1 == Propose(slot, vb1.b, vb1.v);
+  assert propMsg.val == propMsg1.val;  // trigger
+  assert vb1.v == vb2.v;
+}
+
+lemma SafetyProofBallotInductionRecursiveCase(c: Constants, v: Variables, vb1: ValBal, vb2: ValBal, hb: Ballot, slot: nat, propMsg: Message)
+  requires RegularInvs(c, v)
+  requires c.ValidSlot(slot)
+  requires ChosenAtSlot(c, v.Last(), vb1, slot)
+  requires BalLteq(vb1.b, hb)
+  requires BalLt(hb, vb2.b)
+  requires hb != vb1.b
+  requires IsProposeMessage(v, propMsg)
+  requires propMsg == Propose(slot, hb, vb2.v)
+  ensures vb1.v == vb2.v
+  decreases vb2.b.x, vb2.b.id, 0
+{
+  var nq, nb := GetPromiseQuorumForProposeMessage(c, v, vb1, propMsg);
+  SafetyProofBallotInduction(c, v, vb1, VB(vb2.v, hb), nq, nb, slot);
+}
+
+lemma GetPromiseQuorumForProposeMessage(c: Constants, v: Variables, chosenVB: ValBal, propMsg: Message)
 returns (promQ: set<Message>, hb: Ballot)
-  requires v.WF(c)
-  requires ValidVariables(c, v)
-  requires ValidMessages(c, v)
-  requires SendProposeValidity(c, v)
-  requires HostReceiveValidity(c, v)
-  requires HostLsMonotonic(c, v)
-  requires SendPromiseValidity(c, v)
-  requires SendAcceptValidity(c, v)
-  requires HostPromisedMonotonic(c, v)
-  requires HostLogAcceptedVBMonotonic(c, v)
+  requires RegularInvs(c, v)
 
   // Pre-conditions on arguments
   requires IsProposeMessage(v, propMsg) && c.ValidSlot(propMsg.slot)
   requires ChosenAtSlot(c, v.Last(), chosenVB, propMsg.slot)
-  requires propMsg.val == val
-  requires propMsg.bal == bal
-  requires BalLt(chosenVB.b, bal)
+  requires BalLt(chosenVB.b, propMsg.bal)
   // Post-conditions
-  ensures IsPromiseQuorum(c, v, promQ, bal)
-  ensures PromiseSetHighestVBAtSlot(c, v, promQ, bal, VB(val, hb), propMsg.slot)
-  // chosenVB.b <= hb < bal
+  ensures IsPromiseQuorum(c, v, promQ, propMsg.bal)
+  ensures PromiseSetHighestVBAtSlot(c, v, promQ, propMsg.bal, VB(propMsg.val, hb), propMsg.slot)
+  // chosenVB.b <= hb < propMsg.bal
   ensures BalLteq(chosenVB.b, hb)
-  ensures BalLt(hb, bal)
+  ensures BalLt(hb, propMsg.bal)
 {
+  var bal := propMsg.bal;
   var i :|  && v.ValidHistoryIdxStrict(i)
             && Host.SendPropose(c.hosts[bal.id], v.History(i).hosts[bal.id], v.History(i+1).hosts[bal.id], propMsg);
-  
-  var hm : Message;
-  promQ := HighestHeardBackedByReceivedPromises(c, v, i, bal, propMsg.slot);
+  promQ, hb := GetPromiseQuorumForProposeMessageAtHistoryIdx(c, v, chosenVB, propMsg, i);
+}
+
+lemma PromiseSetEmptyContradictsChosenWitnessAtSlot(c: Constants, v: Variables, promQ: set<Message>, bal: Ballot, slot: nat, choosingWitness: Message)
+  requires c.ValidSlot(slot)
+  requires IsPromiseSet(c, v, promQ, bal)
+  requires PromiseSetEmptyVBAtSlot(c, v, promQ, bal, slot)
+  requires choosingWitness in promQ
+  requires choosingWitness.logAcceptedVB.vbOptSeq[slot].Some?
+  ensures false
+{
+  assert choosingWitness.logAcceptedVB.vbOptSeq[slot] == None;
+}
+
+lemma HighestPromiseBallotDominatesChosenWitnessAtSlot(c: Constants, v: Variables, chosenVB: ValBal, promQ: set<Message>, bal: Ballot, slot: nat, val: Value, hb: Ballot, choosingWitness: Message)
+  requires c.ValidSlot(slot)
+  requires IsPromiseSet(c, v, promQ, bal)
+  requires PromiseSetHighestVBAtSlot(c, v, promQ, bal, VB(val, hb), slot)
+  requires choosingWitness in promQ
+  requires choosingWitness.logAcceptedVB.vbOptSeq[slot].Some?
+  requires BalLteq(chosenVB.b, choosingWitness.logAcceptedVB.vbOptSeq[slot].value.b)
+  ensures BalLteq(chosenVB.b, hb)
+{
+  var highestMsg :| WinningPromiseMessageInSlotQuorum(c, v, promQ, bal, slot, VB(val, hb), highestMsg);
+  assert BalLteq(choosingWitness.logAcceptedVB.vbOptSeq[slot].value.b, highestMsg.logAcceptedVB.vbOptSeq[slot].value.b);
+}
+
+lemma GetPromiseQuorumForProposeMessageAtHistoryIdx(c: Constants, v: Variables, chosenVB: ValBal, propMsg: Message, i: nat)
+returns (promQ: set<Message>, hb: Ballot)
+  requires RegularInvs(c, v)
+
+  // Pre-conditions on arguments
+  requires IsProposeMessage(v, propMsg) && c.ValidSlot(propMsg.slot)
+  requires ChosenAtSlot(c, v.Last(), chosenVB, propMsg.slot)
+  requires BalLt(chosenVB.b, propMsg.bal)
+  requires v.ValidHistoryIdxStrict(i)
+  requires Host.SendPropose(c.hosts[propMsg.bal.id], v.History(i).hosts[propMsg.bal.id], v.History(i+1).hosts[propMsg.bal.id], propMsg)
+  // Post-conditions
+  ensures IsPromiseQuorum(c, v, promQ, propMsg.bal)
+  ensures PromiseSetHighestVBAtSlot(c, v, promQ, propMsg.bal, VB(propMsg.val, hb), propMsg.slot)
+  // chosenVB.b <= hb < propMsg.bal
+  ensures BalLteq(chosenVB.b, hb)
+  ensures BalLt(hb, propMsg.bal)
+{
+  var bal := propMsg.bal;
+  var val := propMsg.val;
   var slot := propMsg.slot;
+  assert v.History(i).hosts[bal.id].ls.currBal == bal;
+  assert v.History(i).hosts[bal.id].LdrValue(slot) == val;
+
+  promQ := HighestHeardBackedByReceivedPromises(c, v, i, bal, slot);
+  assert IsPromiseQuorum(c, v, promQ, bal);
   var choosingWitness := ChosenImpliesSeenByHigherPromiseQuorum(c, v, chosenVB, bal, promQ, slot);
-  hm :| WinningPromiseMessageInSlotQuorum(c, v, promQ, bal, slot, VB(v.History(i).hosts[bal.id].LdrValue(slot), v.History(i).hosts[bal.id].ls.logHighestHeardValues[slot].ob.value), hm);
-  hb := hm.logAcceptedVB.vbOptSeq[slot].value.b;
+  assert choosingWitness in promQ;
+  assert v.History(i).hosts[bal.id].ls.logHighestHeardValues[slot].ob.Some? by {
+    if !v.History(i).hosts[bal.id].ls.logHighestHeardValues[slot].ob.Some? {
+      assert PromiseSetEmptyVBAtSlot(c, v, promQ, bal, slot);
+      PromiseSetEmptyContradictsChosenWitnessAtSlot(c, v, promQ, bal, slot, choosingWitness);
+    }
+  }
+  hb := v.History(i).hosts[bal.id].ls.logHighestHeardValues[slot].ob.value;
+  assert PromiseSetHighestVBAtSlot(c, v, promQ, bal, VB(val, hb), slot);
+  HighestPromiseBallotDominatesChosenWitnessAtSlot(c, v, chosenVB, promQ, bal, slot, val, hb, choosingWitness);
+  assert BalLt(hb, bal) by {
+    assert v.History(i).hosts[bal.id].LdrHeardAtMostAtSlot(c.hosts[bal.id], slot, bal);
+  }
 }
 
 // Corresponds to ChosenValImpliesPromiseQuorumSeesBal in manual proof
 lemma ChosenImpliesSeenByHigherPromiseQuorum(c: Constants, v: Variables, chosenVB: ValBal, promBal: Ballot, promQ: set<Message>, slot: nat)
 returns (promMsg: Message) 
-  requires v.WF(c)
-  requires ValidHistory(c, v)
-  requires ValidMessages(c, v)
-  requires SendPromiseValidity(c, v)
-  requires SendAcceptValidity(c, v)
-  requires HostReceiveValidity(c, v)
-  requires HostPromisedMonotonic(c, v)
-  requires HostLogAcceptedVBMonotonic(c, v)
+  requires RegularInvs(c, v)
 
   // Pre-conditions on arguments
   requires c.ValidSlot(slot)
@@ -236,7 +316,7 @@ returns (promMsg: Message)
   // Get Accept quorum
   reveal_ChosenAtLearnerSlot();
   var lnr: nat :| ChosenAtLearnerSlot(c, v.Last(), chosenVB, lnr, slot);
-  var accQ := ExtractAcceptMessagesFromReceivedAccepts(c, v, v.Last().hosts[lnr].logReceivedAccepts.mapSeq[slot][chosenVB], chosenVB, lnr, slot);
+  var accQ := ExtractAcceptMessagesFromReceivedAcceptsAt(c, v, |v.history|-1, v.Last().hosts[lnr].logReceivedAccepts.mapSeq[slot][chosenVB], chosenVB, lnr, slot);
 
   // Skolemize the intersecting acceptor and its messages
   var acc := GetIntersectingAcceptor(c, v, accQ, chosenVB, promQ, promBal, slot);
@@ -288,8 +368,10 @@ returns (accId: HostId)
 {
   var prAccs := AcceptorsFromPromiseSet(c, v, promQ, promBal);
   var acAccs := AcceptorsFromAcceptSet(c, v, accQ, accVB, slot);
-  var allAccs := set id | 0 <= id < 2*c.f+1;
   SetComprehensionSize(2*c.f+1);
+  var allAccs := (set id: int {:trigger Identity(id)} | 0 <= id < 2*c.f+1 :: id);
+  assert forall prAcc, acAcc | prAcc in prAccs && acAcc in acAccs :: Identity(prAcc) in allAccs && Identity(acAcc) in allAccs;
+
   var commonAcc := QuorumIntersection(allAccs , prAccs, acAccs);
   return commonAcc;
 }
@@ -328,29 +410,35 @@ returns (accs: set<HostId>)
   }
 }
 
-lemma ExtractAcceptMessagesFromReceivedAccepts(c: Constants, v: Variables, receivedAccepts: set<HostId>, vb: ValBal, lnr: HostId, slot: nat)
+lemma ExtractAcceptMessagesFromReceivedAcceptsAt(c: Constants, v: Variables, i: nat, receivedAccepts: set<HostId>, vb: ValBal, lnr: HostId, slot: nat)
 returns (acceptMsgs: set<Message>)
   requires v.WF(c)
   requires ValidHistory(c, v)
   requires HostReceiveValidity(c, v)
+  requires v.ValidHistoryIdx(i)
   requires 0 <= lnr < |c.hosts|
   requires c.ValidSlot(slot)
-  requires vb in v.Last().hosts[lnr].logReceivedAccepts.mapSeq[slot]
-  requires receivedAccepts <= v.Last().hosts[lnr].logReceivedAccepts.mapSeq[slot][vb]
+  requires receivedAccepts == (if vb in v.History(i).hosts[lnr].logReceivedAccepts.mapSeq[slot] then v.History(i).hosts[lnr].logReceivedAccepts.mapSeq[slot][vb] else {})
   ensures |acceptMsgs| == |receivedAccepts|
-  ensures forall m | m in acceptMsgs :: IsAcceptMessage(v, m) && m.vb == vb && m.slot == slot
+  ensures forall m | m in acceptMsgs :: IsAcceptMessage(v, m) && m.vb == vb && m.slot == slot && (m.Promise? || m.Accept?)
   ensures MessageSetDistinctAccs(acceptMsgs)
   ensures forall acc :: (acc in receivedAccepts <==> Accept(slot, vb, acc) in acceptMsgs)
   decreases receivedAccepts
 {
   reveal_MessageSetDistinctAccs();
-  if | receivedAccepts | == 0 {
-    acceptMsgs := {};
-  } else {
-    var x :| x in receivedAccepts;
-    var subset := ExtractAcceptMessagesFromReceivedAccepts(c, v, receivedAccepts - {x}, vb, lnr, slot);
+  acceptMsgs := {};
+  if |receivedAccepts| > 0 {
     reveal_ValidHistory();
-    var i, msg := ReceiveAcceptStepSkolemization(c, v, |v.history|-1, lnr, slot, vb, x);
+
+    var bucket: NonemptyHostSet := receivedAccepts;
+    var j, msg := ReceiveAcceptStepSkolemization(c, v, i, lnr, slot, vb, bucket);
+
+    var prevReceivedAccepts :=
+      if vb in v.History(j).hosts[lnr].logReceivedAccepts.mapSeq[slot]
+      then v.History(j).hosts[lnr].logReceivedAccepts.mapSeq[slot][vb]
+      else {};
+
+    var subset := ExtractAcceptMessagesFromReceivedAcceptsAt(c, v, j, prevReceivedAccepts, vb, lnr, slot);
     acceptMsgs := subset + {msg};
   }
 }
@@ -389,8 +477,8 @@ returns (promS: set<Message>)
       invariant |promS| + |accs| == |ldr.LdrReceivedPromises()|
       invariant forall p | p in promS :: p.Promise?
       invariant forall acc | acc in accs :: (forall m | m in promS :: m.acc != acc)
-      invariant IsPromiseSet(c, v, promS, ldr.ls.currBal)
-      invariant hbal.None? ==> PromiseSetEmptyVBAtSlot(c, v, promS, ldr.ls.currBal, slot)
+      invariant IsPromiseSet(c, v, promS, ldrBal)
+      invariant hbal.None? ==> PromiseSetEmptyVBAtSlot(c, v, promS, ldrBal, slot)
       invariant MessageSetDistinctAccs(promS)
       invariant forall p: Message | p in promS :: p.acc in ldr.LdrReceivedPromises()
       invariant WinningPromiseMessageInSlotQuorum(c, v, promS, ldrBal, slot, VB(ldr.LdrValue(slot), hbal.value), hm)
@@ -408,8 +496,8 @@ returns (promS: set<Message>)
       invariant |promS| + |accs| == |ldr.LdrReceivedPromises()|
       invariant forall p | p in promS :: p.Promise?
       invariant forall acc | acc in accs :: (forall m | m in promS :: m.acc != acc)
-      invariant IsPromiseSet(c, v, promS, ldr.ls.currBal)
-      invariant hbal.None? ==> PromiseSetEmptyVBAtSlot(c, v, promS, ldr.ls.currBal, slot)
+      invariant IsPromiseSet(c, v, promS, ldrBal)
+      invariant hbal.None? ==> PromiseSetEmptyVBAtSlot(c, v, promS, ldrBal, slot)
       invariant MessageSetDistinctAccs(promS)
       invariant forall p: Message | p in promS :: p.acc in ldr.LdrReceivedPromises()
       decreases accs
@@ -452,11 +540,7 @@ lemma PromiseMessageExistenceAtSlot(c: Constants, v: Variables, i: int, ldrBal: 
 
 lemma ChosenImpliesProposed(c: Constants, v: Variables, i: nat, vb: ValBal, slot: nat) 
 returns (proposeMsg: Message)
-  requires v.WF(c)
-  requires ValidHistory(c, v)
-  requires ValidMessages(c, v)
-  requires SendAcceptValidity(c, v)
-  requires HostReceiveValidity(c, v)
+  requires RegularInvs(c, v)
   requires c.ValidSlot(slot)
   requires v.ValidHistoryIdx(i)
   requires ChosenAtSlot(c, v.History(i), vb, slot)
@@ -465,9 +549,9 @@ returns (proposeMsg: Message)
 {
   reveal_ChosenAtLearnerSlot();
   var lnr: nat :| ChosenAtLearnerSlot(c, v.History(i), vb, lnr, slot);
-  var acc :| acc in v.History(i).hosts[lnr].logReceivedAccepts.mapSeq[slot][vb];
-  reveal_ValidHistory();
-  var j, accMsg := ReceiveAcceptStepSkolemization(c, v, i, lnr, slot, vb, acc);
+  var accMsgs := ExtractAcceptMessagesFromReceivedAcceptsAt(c, v, i, v.History(i).hosts[lnr].logReceivedAccepts.mapSeq[slot][vb], vb, lnr, slot);
+  assert 0 < |accMsgs|;
+  var accMsg :| accMsg in accMsgs;
   var k, prop := SendAcceptSkolemization(c, v, accMsg);
   return prop;
 }
@@ -481,9 +565,9 @@ lemma ChosenImpliesValidBallot(c: Constants, v: Variables, i: nat, vb: ValBal, s
 {
   reveal_ChosenAtLearnerSlot();
   var lnr: nat :| ChosenAtLearnerSlot(c, v.History(i), vb, lnr, slot);
-  var acc :| acc in v.History(i).hosts[lnr].logReceivedAccepts.mapSeq[slot][vb];
-  reveal_ValidHistory();
-  var j, accMsg := ReceiveAcceptStepSkolemization(c, v, i, lnr, slot, vb, acc);
+  var accMsgs := ExtractAcceptMessagesFromReceivedAcceptsAt(c, v, i, v.History(i).hosts[lnr].logReceivedAccepts.mapSeq[slot][vb], vb, lnr, slot);
+  assert 0 < |accMsgs|;
+  var accMsg :| accMsg in accMsgs;
   var k, propMsg := SendAcceptSkolemization(c, v, accMsg);
 }
 
@@ -548,8 +632,8 @@ lemma LearnerValidReceivedAcceptsAtSlot(c: Constants, v: Variables, i: nat, lnr:
     && vb in v.History(i).hosts[lnr].logReceivedAccepts.mapSeq[slot]
     && acc in v.History(i).hosts[lnr].logReceivedAccepts.mapSeq[slot][vb]
   ensures c.ValidHostIdx(acc) {
-    reveal_ValidHistory();
-    var j, accMsg := ReceiveAcceptStepSkolemization(c, v, i, lnr, slot, vb, acc);
+    var accMsgs := ExtractAcceptMessagesFromReceivedAcceptsAt(c, v, i, v.History(i).hosts[lnr].logReceivedAccepts.mapSeq[slot][vb], vb, lnr, slot);
+    assert Accept(slot, vb, acc) in accMsgs;
   }
 }
 
@@ -671,11 +755,10 @@ ghost predicate LeaderPromiseSetPropertiesAtSlot(c: Constants, v: Variables, i: 
   requires v.History(i).hosts[ldrBal.id].ls.currBal == ldrBal
 {
     && var ldr := v.History(i).hosts[ldrBal.id];
-    && var cldr := c.hosts[ldrBal.id];
     && var hbal := ldr.ls.logHighestHeardValues[slot].ob;
-    && IsPromiseSet(c, v, promS, ldr.ls.currBal)
-    && (hbal.Some? ==> PromiseSetHighestVBAtSlot(c, v, promS, ldr.ls.currBal, VB(ldr.LdrValue(slot), hbal.value), slot))
-    && (hbal.None? ==> PromiseSetEmptyVBAtSlot(c, v, promS, ldr.ls.currBal, slot))
+  && IsPromiseSet(c, v, promS, ldrBal)
+  && (hbal.Some? ==> PromiseSetHighestVBAtSlot(c, v, promS, ldrBal, VB(ldr.LdrValue(slot), hbal.value), slot))
+  && (hbal.None? ==> PromiseSetEmptyVBAtSlot(c, v, promS, ldrBal, slot))
     && |promS| == |ldr.LdrReceivedPromises()|
 }
 

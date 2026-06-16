@@ -5,6 +5,8 @@ import opened UtilitiesLibrary
 
 type HostId = nat
 
+type NonemptyHostSet = s: set<HostId> | 0 < |s| witness {0}
+
 type Value(!new, ==)
 
 datatype Ballot = Bal(x: nat, id: HostId)
@@ -71,15 +73,15 @@ datatype MonotonicVBOptionSeq = MVBSeq(vbOptSeq: seq<Option<ValBal>>)
   }
 }
 
-datatype MonotonicReceivedAcceptsSeq = RASeq(mapSeq: seq<map<ValBal, set<HostId>>>)
+datatype MonotonicReceivedAcceptsSeq = RASeq(mapSeq: seq<map<ValBal, NonemptyHostSet>>)
 {
-  function getSlot(slot: int) : map<ValBal, set<HostId>>
+  function getSlot(slot: int) : map<ValBal, NonemptyHostSet>
     requires 0 <= slot < |mapSeq|
   {
     this.mapSeq[slot]
   }
 
-  function updateSlot(slot: int, item: map<ValBal, set<HostId>>) : MonotonicReceivedAcceptsSeq 
+  function updateSlot(slot: int, item: map<ValBal, NonemptyHostSet>) : MonotonicReceivedAcceptsSeq
     requires 0 <= slot < |mapSeq|
   {
     RASeq(mapSeq[slot := item])
@@ -89,7 +91,6 @@ datatype MonotonicReceivedAcceptsSeq = RASeq(mapSeq: seq<map<ValBal, set<HostId>
     && |past.mapSeq| == |this.mapSeq|
     && (forall slot, vb | 0 <= slot < |this.mapSeq| && vb in past.getSlot(slot) 
         :: 
-        && 0 < |past.getSlot(slot)[vb]|
         && vb in this.getSlot(slot)
         && past.getSlot(slot)[vb] <= this.getSlot(slot)[vb]
         && |past.getSlot(slot)[vb]| <= |this.getSlot(slot)[vb]|
