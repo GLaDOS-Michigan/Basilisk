@@ -93,10 +93,16 @@ lemma SafetyProof(c: Constants, v: Variables)
   if !Safety(c, v) {
     ghost var l1: nat :| c.ValidHostId(l1) && v.Last().IsLeader(c, l1);
     ghost var l2: nat :| c.ValidHostId(l2) && v.Last().IsLeader(c, l2) && l2 != l1;
-    SetComprehensionSize(|c.hosts|);
+    ghost var cluster := SetRangeZeroBound(|c.hosts|);
     ghost var rv1, rv2 := v.Last().hosts[l1].receivedVotes.Value(), v.Last().hosts[l2].receivedVotes.Value();
     RegInvsYieldIsLeaderImpliesHasQuorum(c, v);
-    ghost var rogueId := QuorumIntersection((set x: int | 0 <= x < |c.hosts|), rv1, rv2);
+    assert rv1 <= cluster by {
+      assert v.Last().hosts[l1].receivedVotes.IsSubsetOf(cluster);
+    }
+    assert rv2 <= cluster by {
+      assert v.Last().hosts[l2].receivedVotes.IsSubsetOf(cluster);
+    }
+    ghost var rogueId := QuorumIntersection(cluster, rv1, rv2);
     assert v.Last().hosts[rogueId].nominee == WOSome(l1) && v.Last().hosts[rogueId].nominee == WOSome(l2) by {
       // witnesses
       reveal_ValidHistory();

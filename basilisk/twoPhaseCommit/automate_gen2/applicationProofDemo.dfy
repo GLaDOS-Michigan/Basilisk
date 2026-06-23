@@ -164,8 +164,7 @@ lemma SetLemma(S: set<HostId>, e: HostId, size: int)
   requires e !in S
   ensures |S| < size
 {
-  var fullSet := set x | 0 <= x < size;
-  SetComprehensionSize(size);
+  var fullSet := SetRangeZeroBound(size);
   SetContainmentCardinalityStrict(S, fullSet);
 }
 
