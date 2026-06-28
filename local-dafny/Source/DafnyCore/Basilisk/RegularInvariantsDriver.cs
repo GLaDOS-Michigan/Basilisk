@@ -217,7 +217,7 @@ public class RegularInvariantsDriver {
 
   private void ResolveReceiveInvariants(DatatypeDecl dsHosts, Program program) {
     // One top level receive invariant for each host
-    var recvInvList = ReceiveInvariant.FromHost(dsHosts);
+    var recvInvList = ReceiveInvariant.FromHost(dsHosts, program);
     foreach (var recvInv in recvInvList) {
       msgInvFile.AddReceiveInvariant(recvInv);
     }

@@ -236,7 +236,7 @@ returns (promMsg: Message)
   // Get Accept quorum
   reveal_ChosenAtLearnerSlot();
   var lnr: nat :| ChosenAtLearnerSlot(c, v.Last(), chosenVB, lnr, slot);
-  var accQ := ExtractAcceptMessagesFromReceivedAccepts(c, v, v.Last().hosts[lnr].logReceivedAccepts.mapSeq[slot][chosenVB], chosenVB, lnr, slot);
+  var accQ := ExtractAcceptMessagesFromReceivedAcceptsAt(c, v, |v.history|-1, v.Last().hosts[lnr].logReceivedAccepts.mapSeq[slot][chosenVB], chosenVB, lnr, slot);
 
   // Skolemize the intersecting acceptor and its messages
   var acc := GetIntersectingAcceptor(c, v, accQ, chosenVB, promQ, promBal, slot);
@@ -288,8 +288,9 @@ returns (accId: HostId)
 {
   var prAccs := AcceptorsFromPromiseSet(c, v, promQ, promBal);
   var acAccs := AcceptorsFromAcceptSet(c, v, accQ, accVB, slot);
-  var allAccs := set id | 0 <= id < 2*c.f+1;
+  var allAccs := (set id: int {:trigger Identity(id)} | 0 <= id < 2*c.f+1 :: id);
   SetComprehensionSize(2*c.f+1);
+  assert forall prAcc, acAcc | prAcc in prAccs && acAcc in acAccs :: Identity(prAcc) in allAccs && Identity(acAcc) in allAccs;
   var commonAcc := QuorumIntersection(allAccs , prAccs, acAccs);
   return commonAcc;
 }
@@ -328,15 +329,15 @@ returns (accs: set<HostId>)
   }
 }
 
-lemma ExtractAcceptMessagesFromReceivedAccepts(c: Constants, v: Variables, receivedAccepts: set<HostId>, vb: ValBal, lnr: HostId, slot: nat)
+lemma ExtractAcceptMessagesFromReceivedAcceptsAt(c: Constants, v: Variables, i: nat, receivedAccepts: set<HostId>, vb: ValBal, lnr: HostId, slot: nat)
 returns (acceptMsgs: set<Message>)
   requires v.WF(c)
   requires ValidHistory(c, v)
   requires HostReceiveValidity(c, v)
+  requires v.ValidHistoryIdx(i)
   requires 0 <= lnr < |c.hosts|
   requires c.ValidSlot(slot)
-  requires vb in v.Last().hosts[lnr].logReceivedAccepts.mapSeq[slot]
-  requires receivedAccepts <= v.Last().hosts[lnr].logReceivedAccepts.mapSeq[slot][vb]
+  requires receivedAccepts == (if vb in v.History(i).hosts[lnr].logReceivedAccepts.mapSeq[slot] then v.History(i).hosts[lnr].logReceivedAccepts.mapSeq[slot][vb] else {})
   ensures |acceptMsgs| == |receivedAccepts|
   ensures forall m | m in acceptMsgs :: IsAcceptMessage(v, m) && m.vb == vb && m.slot == slot
   ensures MessageSetDistinctAccs(acceptMsgs)
@@ -344,13 +345,19 @@ returns (acceptMsgs: set<Message>)
   decreases receivedAccepts
 {
   reveal_MessageSetDistinctAccs();
-  if | receivedAccepts | == 0 {
-    acceptMsgs := {};
-  } else {
-    var x :| x in receivedAccepts;
-    var subset := ExtractAcceptMessagesFromReceivedAccepts(c, v, receivedAccepts - {x}, vb, lnr, slot);
+  acceptMsgs := {};
+  if |receivedAccepts| > 0 {
     reveal_ValidHistory();
-    var i, msg := ReceiveAcceptStepSkolemization(c, v, |v.history|-1, lnr, slot, vb, x);
+
+    var bucket: NonemptyHostSet := receivedAccepts;
+    var j, msg := ReceiveAcceptStepSkolemization(c, v, i, lnr, slot, vb, bucket);
+
+    var prevReceivedAccepts :=
+      if vb in v.History(j).hosts[lnr].logReceivedAccepts.mapSeq[slot]
+      then v.History(j).hosts[lnr].logReceivedAccepts.mapSeq[slot][vb]
+      else {};
+
+    var subset := ExtractAcceptMessagesFromReceivedAcceptsAt(c, v, j, prevReceivedAccepts, vb, lnr, slot);
     acceptMsgs := subset + {msg};
   }
 }
@@ -465,9 +472,8 @@ returns (proposeMsg: Message)
 {
   reveal_ChosenAtLearnerSlot();
   var lnr: nat :| ChosenAtLearnerSlot(c, v.History(i), vb, lnr, slot);
-  var acc :| acc in v.History(i).hosts[lnr].logReceivedAccepts.mapSeq[slot][vb];
-  reveal_ValidHistory();
-  var j, accMsg := ReceiveAcceptStepSkolemization(c, v, i, lnr, slot, vb, acc);
+  var accMsgs := ExtractAcceptMessagesFromReceivedAcceptsAt(c, v, i, v.History(i).hosts[lnr].logReceivedAccepts.mapSeq[slot][vb], vb, lnr, slot);
+  var accMsg :| accMsg in accMsgs;
   var k, prop := SendAcceptSkolemization(c, v, accMsg);
   return prop;
 }
@@ -481,9 +487,8 @@ lemma ChosenImpliesValidBallot(c: Constants, v: Variables, i: nat, vb: ValBal, s
 {
   reveal_ChosenAtLearnerSlot();
   var lnr: nat :| ChosenAtLearnerSlot(c, v.History(i), vb, lnr, slot);
-  var acc :| acc in v.History(i).hosts[lnr].logReceivedAccepts.mapSeq[slot][vb];
-  reveal_ValidHistory();
-  var j, accMsg := ReceiveAcceptStepSkolemization(c, v, i, lnr, slot, vb, acc);
+  var accMsgs := ExtractAcceptMessagesFromReceivedAcceptsAt(c, v, i, v.History(i).hosts[lnr].logReceivedAccepts.mapSeq[slot][vb], vb, lnr, slot);
+  var accMsg :| accMsg in accMsgs;
   var k, propMsg := SendAcceptSkolemization(c, v, accMsg);
 }
 
@@ -548,8 +553,8 @@ lemma LearnerValidReceivedAcceptsAtSlot(c: Constants, v: Variables, i: nat, lnr:
     && vb in v.History(i).hosts[lnr].logReceivedAccepts.mapSeq[slot]
     && acc in v.History(i).hosts[lnr].logReceivedAccepts.mapSeq[slot][vb]
   ensures c.ValidHostIdx(acc) {
-    reveal_ValidHistory();
-    var j, accMsg := ReceiveAcceptStepSkolemization(c, v, i, lnr, slot, vb, acc);
+    var accMsgs := ExtractAcceptMessagesFromReceivedAcceptsAt(c, v, i, v.History(i).hosts[lnr].logReceivedAccepts.mapSeq[slot][vb], vb, lnr, slot);
+    assert Accept(slot, vb, acc) in accMsgs;
   }
 }
 

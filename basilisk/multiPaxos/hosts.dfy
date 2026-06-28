@@ -412,9 +412,11 @@ ghost predicate ReceiveAccept(c: Constants, v: Variables, v': Variables, inMsg: 
   )
 }
 
-function UpdateReceivedAcceptsOneSlot(receivedAccepts: map<ValBal, set<HostId>>, vb: ValBal, acc: HostId) : (out: map<ValBal, set<HostId>>)
+function UpdateReceivedAcceptsOneSlot(receivedAccepts: map<ValBal, NonemptyHostSet>, vb: ValBal, acc: HostId) : (out: map<ValBal, NonemptyHostSet>)
   // Tony: ensures clauses are exactly how I can prove to the user, and tell dafny, that 
   // data structures annotated as monotonic actually are monotonic --- cool!
+  ensures vb in out
+  ensures 0 < |out[vb]|
   ensures vb in receivedAccepts ==> vb in out
   ensures vb in receivedAccepts ==> |receivedAccepts[vb]| <= |out[vb]|
 {

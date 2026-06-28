@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Text;
 using Microsoft.VisualBasic;
 
 namespace Microsoft.Dafny
@@ -89,19 +90,104 @@ namespace Microsoft.Dafny
       return string.Format("{0}{1}Skolemization", module, GetNameCapitalized());
     }
 
+    public string GetBoundaryAssertion() {
+      return string.Format(
+        "  assert forall idx | 0 <= idx < |c.{0}|\n    :: v'.Last().{0}[idx].{1}.SatisfiesMonotonic(v.Last().{0}[idx].{1});",
+        variableField,
+        name);
+    }
+
+    private string HistoryField(string vars, string historyIndex, string idx) {
+      return $"{vars}.History({historyIndex}).{variableField}[{idx}].{name}";
+    }
+
+    private string LastField(string vars, string idx) {
+      return $"{vars}.Last().{variableField}[{idx}].{name}";
+    }
+
+    private string FromTemplate(string key, params object[] args) {
+      return string.Format(RegularInvPrinter.GetFromTemplate(key, 0), args);
+    }
+
+    private string Indent(string text, int indent) {
+      if (string.IsNullOrWhiteSpace(text)) {
+        return string.Empty;
+      }
+
+      var prefix = new string(' ', indent);
+      var normalized = text.Replace("\r\n", "\n").Trim('\n');
+      var res = new StringBuilder();
+      foreach (var line in normalized.Split('\n')) {
+        if (line.Length == 0) {
+          res.AppendLine();
+        } else {
+          res.Append(prefix);
+          res.AppendLine(line);
+        }
+      }
+      return res.ToString().TrimEnd();
+    }
+
+    private string RenderStructuredInductiveLemma(string atIndicesLemma, string ensuresExpr) {
+      return FromTemplate(
+        "MonotonicityStructuredInductiveLemma",
+        GetLemmaName(),
+        GetPredicateName(),
+        GetBoundaryAssertion(),
+        variableField,
+        ensuresExpr,
+        atIndicesLemma);
+    }
+
+    private string RenderAtIndicesLemma(string atIndicesLemma, string ensuresExpr, string crossBoundaryPrelude, string crossBoundaryBody, string selfBody) {
+      return FromTemplate(
+        "MonotonicityAtIndices",
+        atIndicesLemma,
+        variableField,
+        ensuresExpr,
+        Indent(crossBoundaryPrelude, 6),
+        Indent(crossBoundaryBody, 6),
+        Indent(selfBody, 6));
+    }
+
+    private string BuildCrossBoundaryDirectStep(string pastExpr, string middleExpr, string currentExpr) {
+      var res = new StringBuilder();
+      res.AppendLine($"assert {middleExpr}.SatisfiesMonotonic({pastExpr});");
+      res.AppendLine($"assert {currentExpr}.SatisfiesMonotonic({middleExpr});");
+      res.AppendLine($"assert {currentExpr}.SatisfiesMonotonic({pastExpr});");
+      return res.ToString().TrimEnd();
+    }
+
+    private string ToSimpleInductiveLemma() {
+      var atIndicesLemma = $"{GetLemmaName()}AtIndices";
+      var lastMinusOneField = HistoryField("v", "|v'.history| - 2", "idx");
+      var iField = HistoryField("v'", "i", "idx");
+      var jField = HistoryField("v'", "j", "idx");
+      var oldIField = HistoryField("v", "i", "idx");
+      var ensuresExpr = $"{jField}.SatisfiesMonotonic({iField})";
+
+      var res = new StringBuilder();
+      res.Append(RenderStructuredInductiveLemma(atIndicesLemma, ensuresExpr));
+      res.AppendLine();
+      res.Append(RenderAtIndicesLemma(
+        atIndicesLemma,
+        ensuresExpr,
+        string.Empty,
+        BuildCrossBoundaryDirectStep(oldIField, lastMinusOneField, jField),
+        $"assert {iField}.SatisfiesMonotonic({iField});"));
+      return res.ToString();
+    }
+
+    public string ToInductiveLemma() {
+      return ToSimpleInductiveLemma();
+    }
+
     public string ToPredicate() {
-      var res = string.Format("ghost predicate {0}(c: Constants, v: Variables)\n", GetPredicateName());
-      res += "  requires v.WF(c)\n" +
-            "{\n" +
-            "  forall idx, i, j |\n" +
-            String.Format("    && 0 <= idx < |c.{0}|\n", variableField) +
-            "    && v.ValidHistoryIdx(i)\n" +
-            "    && v.ValidHistoryIdx(j)\n" +
-            "    && i <= j\n" +
-            "  ::\n" +
-            string.Format("    v.History(j).{0}[idx].{1}.SatisfiesMonotonic(v.History(i).{0}[idx].{1})\n", variableField, name) +
-             "}\n";
-      return res;
+      return FromTemplate(
+        "MonotonicityPredicate",
+        GetPredicateName(),
+        variableField,
+        name);
     }
 
     public string ToWitnessPredicate() {

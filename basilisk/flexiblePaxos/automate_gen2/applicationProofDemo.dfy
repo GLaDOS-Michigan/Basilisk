@@ -235,8 +235,9 @@ returns (accId: AcceptorId)
 {
   var prAccs := AcceptorsFromPromiseSet(c, v, promQ, promBal);
   var acAccs := AcceptorsFromAcceptSet(c, v, accQ, accVB);
-  var allAccs := set id | 0 <= id < c.n;
+  var allAccs := (set id: int {:trigger Identity(id)} | 0 <= id < c.n :: id);
   SetComprehensionSize(c.n);
+  assert forall prAcc, acAcc | prAcc in prAccs && acAcc in acAccs :: Identity(prAcc) in allAccs && Identity(acAcc) in allAccs;
   var commonAcc := QuorumIntersection(allAccs , prAccs, acAccs);
   return commonAcc;
 }

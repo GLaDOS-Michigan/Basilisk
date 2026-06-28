@@ -189,8 +189,7 @@ lemma AC3Proof(c: Constants, v: Variables)
         requires e !in S
         ensures |S| < size
     {
-        var fullSet := set x | 0 <= x < size;
-        SetComprehensionSize(size);
+        var fullSet := SetRangeZeroBound(size);
         SetContainmentCardinalityStrict(S, fullSet);
     }
 

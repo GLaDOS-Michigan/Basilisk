@@ -28,6 +28,24 @@ namespace Microsoft.Dafny
     }
     return res.ToString();
   }
+
+    private static void PrintMonotonicityInvInductive(StringBuilder res, List<MonotonicityInvariant> invariants) {
+      res.AppendLine("lemma MonotonicityInvInductive(c: Constants, v: Variables, v': Variables)");
+      res.AppendLine("  requires MonotonicityInv(c, v)");
+      res.AppendLine("  requires Next(c, v, v')");
+      res.AppendLine("  ensures MonotonicityInv(c, v')");
+      res.AppendLine("{");
+      foreach (var inv in invariants) {
+        res.AppendLine($"  {inv.GetLemmaName()}(c, v, v');");
+      }
+      res.AppendLine("}");
+      res.AppendLine();
+
+      foreach (var inv in invariants) {
+        res.Append(inv.ToInductiveLemma());
+        res.AppendLine();
+      }
+    }
     public static string PrintFootprintJson(Dictionary<String, MessageUpdates> footprintMap) {
       //Ugly code to get it into nested dictionary format in order to place in JSON
       Dictionary<String, Dictionary<String, Dictionary<String, List<String>>>> footPrintDictNested 
@@ -40,6 +58,7 @@ namespace Microsoft.Dafny
     }
     public static string PrintMonotonicityInvariants(MonotonicityInvariantsFile file, string sourceFileName) {
       var res = new StringBuilder();
+      var invariants = file.GetInvariants().ToList();
 
       // Header
       res.AppendLine($"/// This file is auto-generated from {sourceFileName}");
@@ -57,7 +76,7 @@ namespace Microsoft.Dafny
       res.AppendLine();
 
       // State invariants
-      foreach (var monoInv in file.GetInvariants()) {
+      foreach (var monoInv in invariants) {
         res.AppendLine(monoInv.ToPredicate());
       }
 
@@ -65,7 +84,7 @@ namespace Microsoft.Dafny
       res.AppendLine("ghost predicate MonotonicityInv(c: Constants, v: Variables)");
       res.AppendLine("{");
       res.AppendLine("  && v.WF(c)");
-      foreach (var inv in file.GetInvariants()) {
+      foreach (var inv in invariants) {
         res.AppendLine(String.Format("  && {0}(c, v)", inv.GetPredicateName()));
       }
       res.AppendLine("}");
@@ -78,8 +97,7 @@ namespace Microsoft.Dafny
       res.AppendLine();
       
       res.AppendLine("// Inductive obligation");
-      res.Append(GetFromTemplate("MonotonicityInvInductiveHeader", 0));
-      res.AppendLine("}");
+      PrintMonotonicityInvInductive(res, invariants);
       res.AppendLine();
 
       // Footer
@@ -323,12 +341,20 @@ namespace Microsoft.Dafny
       // print InvNextHostOwnKey if more than one host type
       if (file.ExtractHosts().Count > 1) {
         var hostTypes = new List<string>(file.ExtractHosts().Keys);
+
+        // First print all NewOwnerImpliesInFlight helper lemmas for each host type
+        foreach (var h in hostTypes) {
+          PrintNewOwnerImpliesInFlight(res, h, file.ExtractHosts()[h]);
+          res.AppendLine();
+        }
+
+        // Then print InvNextHostOwnKey for each directed pair
         foreach (var h in hostTypes) {
           foreach (var other in hostTypes) {
             if (other != h) {
               res.AppendLine("// One for each host type");
-            PrintInvNextHostOwnKey(res, h, file.ExtractHosts()[h], other);
-            res.AppendLine();
+              PrintInvNextHostOwnKey(res, h, file.ExtractHosts()[h], other, file.ExtractHosts()[other]);
+              res.AppendLine();
             }
           }
         }
@@ -434,31 +460,14 @@ namespace Microsoft.Dafny
       res.AppendLine("}");
     }
 
-    // Print the HostOwnKey group for given host type
-    private static void PrintInvNextHostOwnKey(StringBuilder res, string mod, string field, string otherMod) {
-      res.AppendLine($"lemma InvNext{mod}OwnKey(c: Constants, v: Variables, v': Variables) ");
-      res.AppendLine("  requires v'.WF(c)");
-      res.AppendLine("  requires OwnershipInv(c, v)");
-      res.AppendLine("  requires Next(c, v, v')");
-      res.AppendLine($"  ensures {mod}OwnKey(c, v')");
-      res.AppendLine("{");
-      res.AppendLine($"  forall k | !No{mod}OwnsKey(c, v', k)");
-      res.AppendLine($"  ensures No{otherMod}OwnsKey(c, v', k) {{");
-      
-      res.AppendLine("    var dsStep :| NextStep(c, v.Last(), v'.Last(), v.network, v'.network, dsStep);");
-      res.AppendLine($"    var idx :| 0 <= idx < |c.{field}| && {mod}.HostOwnsUniqueKey(c.{field}[idx], v'.Last().{field}[idx], k);");
-      res.AppendLine($"    if {mod}.HostOwnsUniqueKey(c.{field}[idx], v.Last().{field}[idx], k) {{");
-      res.AppendLine("      assert !UniqueKeyInFlight(c, v, k);");
-      res.AppendLine($"      if !No{otherMod}OwnsKey(c, v', k) {{");
-      res.AppendLine("        assert KeyInFlightByMessage(c, v, dsStep.msgOps.recv.value, k);");
-      res.AppendLine("        assert false;");
-      res.AppendLine("      }");
-      res.AppendLine("    } else {");
-      res.AppendLine("      assert KeyInFlightByMessage(c, v, dsStep.msgOps.recv.value, k);");
-      res.AppendLine("      assert UniqueKeyInFlight(c, v, k);");
-      res.AppendLine("    }");
-      res.AppendLine("  }");
-      res.AppendLine("}");
+    // Print NewOwnerImpliesInFlight helper lemma for a given host type.
+    private static void PrintNewOwnerImpliesInFlight(StringBuilder res, string mod, string field) {
+      res.AppendLine(string.Format(GetFromTemplate("NewOwnerImpliesInFlight", 0), mod, field));
+    }
+
+    // Print the InvNextHostOwnKey lemma for given host type.
+    private static void PrintInvNextHostOwnKey(StringBuilder res, string mod, string field, string otherMod, string otherField) {
+      res.AppendLine(string.Format(GetFromTemplate("InvNextHostOwnKey", 0), mod, field, otherMod, otherField));
     }    
   } // end class MessageInvariantsFile
 }

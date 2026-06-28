@@ -1,6 +1,11 @@
 module UtilitiesLibrary {
   datatype Option<T> = Some(value:T) | None
 
+  ghost function Identity<T>(value: T): T
+  {
+    value
+  }
+
   ghost function max(x: int, y: int) : (res: int) 
     ensures res == x || res == y
     ensures res >= x && res >= y
@@ -48,18 +53,29 @@ module UtilitiesLibrary {
     && s[|s|-1] == y
     && (forall n | x <= n <= y :: n in s)
   }
+
+  ghost function {:opaque} SetRangeZeroBound(n: int): (s: set<int>)
+    requires n >= 0
+    ensures forall i {:trigger i in s} :: 0 <= i < n <==> i in s
+    ensures |s| == n
+  {
+    if n == 0 then {} else {n-1} + SetRangeZeroBound(n - 1)
+  }
   
   lemma SetComprehensionSize(n: nat) 
-    ensures |(set x | 0 <= x < n)| == n
-    decreases n
+    ensures |(set x: int {:trigger Identity(x)} | 0 <= x < n :: x)| == n
   {
-    var s := (set x | 0 <= x < n);
-    if n == 0 {
-      assert |s| == 0;
-    } else {
-      SetComprehensionSize(n-1);
-      assert s == (set x | 0 <= x < n-1) + {n-1};  // trigger
+    var s := (set x: int {:trigger Identity(x)} | 0 <= x < n :: x);
+    var range := SetRangeZeroBound(n);
+    assert range <= s by {
+      forall i {:trigger i in range} | i in range
+        ensures i in s
+      {
+        assert Identity(i) in s;
+      }
     }
+    SetContainmentCardinality(s, range);
+    SetContainmentCardinality(range, s);
   }
 
   lemma SetContainmentCardinality<T>(s1: set<T>, s2: set<T>) 
