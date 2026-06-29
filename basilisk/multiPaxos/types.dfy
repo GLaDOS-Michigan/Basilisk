@@ -81,7 +81,7 @@ datatype MonotonicReceivedAcceptsSeq = RASeq(mapSeq: seq<map<ValBal, NonemptyHos
     this.mapSeq[slot]
   }
 
-  function updateSlot(slot: int, item: map<ValBal, NonemptyHostSet>) : MonotonicReceivedAcceptsSeq 
+  function updateSlot(slot: int, item: map<ValBal, NonemptyHostSet>) : MonotonicReceivedAcceptsSeq
     requires 0 <= slot < |mapSeq|
   {
     RASeq(mapSeq[slot := item])
