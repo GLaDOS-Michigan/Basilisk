@@ -80,9 +80,7 @@ datatype MonotonicLeaderState = LS(currBal: Ballot, value: Value, promises: set<
     && (past.currBal == currBal ==> 
             && past.promises <= this.promises
             && |past.promises| <= |this.promises|
-            && (forall val: Value | |past.promises| >= f+1 && past.value == val
-                :: this.value == val
-            )
+            && (|past.promises| >= f+1 ==> this.value == past.value)
             && (past.highestHeardBallot.Some? ==> this.highestHeardBallot.Some? && BalLteq(past.highestHeardBallot.value, this.highestHeardBallot.value))
       )
   }
