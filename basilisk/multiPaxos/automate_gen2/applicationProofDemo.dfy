@@ -549,10 +549,7 @@ returns (proposeMsg: Message)
   reveal_ChosenAtLearnerSlot();
   var lnr: nat :| ChosenAtLearnerSlot(c, v.History(i), vb, lnr, slot);
   var accMsgs := ExtractAcceptMessagesFromReceivedAcceptsAt(c, v, i, v.History(i).hosts[lnr].logReceivedAccepts.mapSeq[slot][vb], vb, lnr, slot);
-<<<<<<< HEAD
-=======
   assert 0 < |accMsgs|;
->>>>>>> 310f19f (Fix brittle proofs in multiPaxos)
   var accMsg :| accMsg in accMsgs;
   var k, prop := SendAcceptSkolemization(c, v, accMsg);
   return prop;
@@ -568,10 +565,7 @@ lemma ChosenImpliesValidBallot(c: Constants, v: Variables, i: nat, vb: ValBal, s
   reveal_ChosenAtLearnerSlot();
   var lnr: nat :| ChosenAtLearnerSlot(c, v.History(i), vb, lnr, slot);
   var accMsgs := ExtractAcceptMessagesFromReceivedAcceptsAt(c, v, i, v.History(i).hosts[lnr].logReceivedAccepts.mapSeq[slot][vb], vb, lnr, slot);
-<<<<<<< HEAD
-=======
   assert 0 < |accMsgs|;
->>>>>>> 310f19f (Fix brittle proofs in multiPaxos)
   var accMsg :| accMsg in accMsgs;
   var k, propMsg := SendAcceptSkolemization(c, v, accMsg);
 }

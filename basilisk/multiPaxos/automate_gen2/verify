@@ -20,11 +20,11 @@ $dafnyFootprint "$scriptpath/distributedSystem.dfy" > footprints.log
 echo "Generating invariants"
 $dafnyMsgInv "$scriptpath/customMessageInvariants.dfy" > autoInvs.log
 
-time (
+time {
     echo "Verifying batch 1/2"
     echo "$files1" | tr " " "\n";
     $dafnyVerify $files1; 
     echo "Verifying batch 2/2"
     echo "$files2" | tr " " "\n";
     $dafnyVerify $files2; 
-)
+}
