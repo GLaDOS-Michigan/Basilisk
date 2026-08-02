@@ -57,9 +57,7 @@ datatype MonotonicPromisesAndValue = PV(promises: set<AcceptorId>, value: Value,
   ghost predicate SatisfiesMonotonic(past: MonotonicPromisesAndValue) {
     && past.promises <= this.promises
     && |past.promises| <= |this.promises|
-    && (forall val: Value | |past.promises| >= p1Quorum && past.value == val
-        :: this.value == val
-    )
+    && (|past.promises| >= p1Quorum ==> this.value == past.value)
   }
 }
 }
