@@ -1,6 +1,6 @@
 #!/bin/sh
 
-scriptpath=$( cd "$(dirname "${BASH_SOURCE[0]}")" ; pwd -P )
+scriptpath=$( cd "$(dirname "$0")" ; pwd -P )
 
 dafny="$scriptpath/../../../local-dafny/Scripts/dafny"
 
