@@ -69,30 +69,34 @@ lemma RegInvsYieldIsLeaderImpliesHasQuorum(c: Constants, v: Variables)
   }
 }
 
-lemma RegInvsYieldReceivedVotesValid(c: Constants, v: Variables)
+lemma RegInvsYieldReceivedVotesValidAtHost(c: Constants, v: Variables, h: nat)
   requires RegularInvs(c, v)
-  ensures forall h: nat | c.ValidHostId(h) :: 
-          v.Last().hosts[h].receivedVotes.IsSubsetOf(set x: int | 0 <= x < |c.hosts|)
+  requires c.ValidHostId(h)
+  ensures v.Last().hosts[h].receivedVotes.IsSubsetOf(SetRangeZeroBound(|c.hosts|))
 {
-  forall h : nat | c.ValidHostId(h) 
-  ensures v.Last().hosts[h].receivedVotes.IsSubsetOf(set x: int | 0 <= x < |c.hosts|) {
-    forall voter | v.Last().hosts[h].receivedVotes.Contains(voter)
-    ensures voter in (set x | 0 <= x < |c.hosts|) {
+  var cluster := SetRangeZeroBound(|c.hosts|);
+  assert v.Last().hosts[h].receivedVotes.Value() <= cluster by {
+    forall voter {:trigger voter in v.Last().hosts[h].receivedVotes.Value()} | voter in v.Last().hosts[h].receivedVotes.Value()
+    ensures voter in cluster {
       reveal_ValidHistory();
       var _, _ := ReceiveVoteStepSkolemization(c, v, |v.history|-1, h, voter);
+      assert 0 <= voter < |c.hosts|;
+      assert voter in cluster;
     }
-    MonotonicSetContainmentLemma(v.Last().hosts[h].receivedVotes, set x: int | 0 <= x < |c.hosts|);
   }
+  assert v.Last().hosts[h].receivedVotes.IsSubsetOf(cluster);
+  assert v.Last().hosts[h].receivedVotes.IsSubsetOf(SetRangeZeroBound(|c.hosts|));
 }
 
 lemma SafetyProof(c: Constants, v: Variables)
   requires RegularInvs(c, v)
   ensures Safety(c, v)
 {
-  RegInvsYieldReceivedVotesValid(c, v);
   if !Safety(c, v) {
     ghost var l1: nat :| c.ValidHostId(l1) && v.Last().IsLeader(c, l1);
     ghost var l2: nat :| c.ValidHostId(l2) && v.Last().IsLeader(c, l2) && l2 != l1;
+    RegInvsYieldReceivedVotesValidAtHost(c, v, l1);
+    RegInvsYieldReceivedVotesValidAtHost(c, v, l2);
     ghost var cluster := SetRangeZeroBound(|c.hosts|);
     ghost var rv1, rv2 := v.Last().hosts[l1].receivedVotes.Value(), v.Last().hosts[l2].receivedVotes.Value();
     RegInvsYieldIsLeaderImpliesHasQuorum(c, v);
@@ -102,13 +106,15 @@ lemma SafetyProof(c: Constants, v: Variables)
     assert rv2 <= cluster by {
       assert v.Last().hosts[l2].receivedVotes.IsSubsetOf(cluster);
     }
+
     ghost var rogueId := QuorumIntersection(cluster, rv1, rv2);
-    assert v.Last().hosts[rogueId].nominee == WOSome(l1) && v.Last().hosts[rogueId].nominee == WOSome(l2) by {
-      // witnesses
+    assert v.Last().hosts[rogueId].nominee == WOSome(l1) by {
       reveal_ValidHistory();
       var j1, msg1 := ReceiveVoteStepSkolemization(c, v, |v.history|-1, l1, rogueId);
+    }
+    assert v.Last().hosts[rogueId].nominee == WOSome(l2) by {
+      reveal_ValidHistory();
       var j2, msg2 := ReceiveVoteStepSkolemization(c, v, |v.history|-1, l2, rogueId);
-      // assert false;
     }
   }
 }
