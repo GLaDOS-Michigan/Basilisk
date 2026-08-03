@@ -6,7 +6,7 @@ module UtilitiesLibrary {
     value
   }
 
-  ghost function max(x: int, y: int) : (res: int) 
+  ghost function max(x: int, y: int) : (res: int)
     ensures res == x || res == y
     ensures res >= x && res >= y
   {
@@ -40,9 +40,9 @@ module UtilitiesLibrary {
   }
 
   ghost predicate StrictOrdering(s: seq<nat>) {
-    forall i , j | 
-      && 0 <= i < |s| 
-      && 0 <= j < |s| 
+    forall i , j |
+      && 0 <= i < |s|
+      && 0 <= j < |s|
       && i < j
     :: s[i] < s[j]
   }
@@ -61,8 +61,8 @@ module UtilitiesLibrary {
   {
     if n == 0 then {} else {n-1} + SetRangeZeroBound(n - 1)
   }
-  
-  lemma SetComprehensionSize(n: nat) 
+
+  lemma SetComprehensionSize(n: nat)
     ensures |(set x: int {:trigger Identity(x)} | 0 <= x < n :: x)| == n
   {
     var s := (set x: int {:trigger Identity(x)} | 0 <= x < n :: x);
@@ -78,7 +78,7 @@ module UtilitiesLibrary {
     SetContainmentCardinality(range, s);
   }
 
-  lemma SetContainmentCardinality<T>(s1: set<T>, s2: set<T>) 
+  lemma SetContainmentCardinality<T>(s1: set<T>, s2: set<T>)
     requires s1 <= s2
     ensures |s1| <= |s2|
   {
@@ -98,16 +98,40 @@ module UtilitiesLibrary {
     }
   }
 
-  lemma SetContainmentCardinalityStrict<T>(s1: set<T>, s2: set<T>) 
+  lemma SetContainmentMeansOneElementIsInOnlyS2<T>(s1: set<T>, s2: set<T>)
+    requires s1 < s2
+    ensures exists x :: x in s2 - s1
+  {
+    if |s1| == 0 {
+      var x :| x in s2;
+      assert x in s2 && x !in s1;
+      assert x in s2 - s1;
+    } else {
+      var x :| x in s1;
+      if (x in s2) {
+        var s1' := s1 - {x};
+        var s2' := s2 - {x};
+        SetContainmentMeansOneElementIsInOnlyS2(s1', s2');
+        var y :| y in s2' - s1';
+        assert y in s2 && y !in s1;
+        assert y in s2 - s1;
+      } else {
+        assert x !in s1 && x in s2;
+      }
+    }
+  }
+
+  lemma SetContainmentCardinalityStrict<T>(s1: set<T>, s2: set<T>)
     requires s1 < s2
     ensures |s1| < |s2|
   {
+    SetContainmentMeansOneElementIsInOnlyS2(s1, s2);
     var x :| x in s2 - s1;
     var s2' := s2 - {x};
     SetContainmentCardinality(s1, s2');
   }
 
-  lemma UnionIncreasesCardinality<T>(s1: set<T>, s2: set<T>) 
+  lemma UnionIncreasesCardinality<T>(s1: set<T>, s2: set<T>)
     ensures |s1 + s2| >= |s1|
     decreases s2
   {
@@ -126,7 +150,7 @@ module UtilitiesLibrary {
     }
   }
 
-  lemma LargerSetIncreasesCardinalityMore<T>(s: set<T>, s1: set<T>, s2: set<T>) 
+  lemma LargerSetIncreasesCardinalityMore<T>(s: set<T>, s1: set<T>, s2: set<T>)
     requires s1 <= s2
     ensures |s+s1| <= |s+s2|
   {
@@ -199,8 +223,8 @@ module UtilitiesLibrary {
   ghost predicate SetIsQuorum<T>(clusterSize: nat, S: set<T>) {
     |S| > clusterSize / 2
   }
-  
-  lemma QuorumIntersection<T>(cluster: set<T>, S1: set<T>, S2: set<T>) returns (e: T) 
+
+  lemma QuorumIntersection<T>(cluster: set<T>, S1: set<T>, S2: set<T>) returns (e: T)
     requires |S1| + |S2| > |cluster|
     requires S1 <= cluster
     requires S2 <= cluster
@@ -217,7 +241,7 @@ module UtilitiesLibrary {
     e :| e in overlap; // Picks one arbitrary element from overlap set.
   }
 
-  lemma DisjointSetUnionCardinality<T>(S1: set<T>, S2: set<T>) 
+  lemma DisjointSetUnionCardinality<T>(S1: set<T>, S2: set<T>)
     requires S1 * S2 == {}
     ensures |S1| + |S2| == |S1 + S2|
   {
@@ -264,9 +288,9 @@ module UtilitiesLibrary {
   }
 
   ghost predicate SeqOptionMonotoneIncreasing(s: seq<Option<nat>>) {
-    forall i, j | 
-      && 0 <= i < |s| 
-      && 0 <= j < |s| 
+    forall i, j |
+      && 0 <= i < |s|
+      && 0 <= j < |s|
       && i <= j
       && s[i].Some?
     :: s[j].Some? && s[i].value <= s[j].value
@@ -289,7 +313,7 @@ module UtilitiesLibrary {
       assert Sum(seqA + seqB) == Sum(seqA) + Sum(seqB);
     }
     else{
-      assert seqA[1..] + seqB == (seqA + seqB)[1..]; 
+      assert seqA[1..] + seqB == (seqA + seqB)[1..];
       assert Sum(seqA + seqB) == Sum(seqA) + Sum(seqB);
 
     }
