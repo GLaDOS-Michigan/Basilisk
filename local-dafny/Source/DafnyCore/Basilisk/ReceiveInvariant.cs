@@ -71,8 +71,10 @@ namespace Microsoft.Dafny
     private string explicitBoundaryCase2Match;
     private string helperBoundaryActorField;
     private string helperBoundaryMsgOpsField;
+    private string extraVariables;
+    private string extraVariablesType;
 
-    public ReceiveInvariant(string hostModule, string hostField, bool useExplicitBoundaryCase2, bool omitExplicitBoundaryCatchAll, bool useNamedHostStepHelper, string explicitBoundaryCase2Match, string helperBoundaryActorField, string helperBoundaryMsgOpsField) {
+    public ReceiveInvariant(string hostModule, string hostField, bool useExplicitBoundaryCase2, bool omitExplicitBoundaryCatchAll, bool useNamedHostStepHelper, string explicitBoundaryCase2Match, string helperBoundaryActorField, string helperBoundaryMsgOpsField, string extraVariables, string extraVariablesType) {
       this.opaque = true;
       this.hostModule = hostModule;
       this.hostField = hostField;
@@ -82,6 +84,8 @@ namespace Microsoft.Dafny
       this.explicitBoundaryCase2Match = explicitBoundaryCase2Match;
       this.helperBoundaryActorField = helperBoundaryActorField;
       this.helperBoundaryMsgOpsField = helperBoundaryMsgOpsField;
+      this.extraVariables = extraVariables;
+      this.extraVariablesType = extraVariablesType;
     }
 
     public static List<ReceiveInvariant> FromHost(DatatypeDecl dsHosts, Program program) {
@@ -93,7 +97,7 @@ namespace Microsoft.Dafny
       foreach (var formal in dsHosts.Ctors[0].Formals) {
         var name = formal.DafnyName;
         if (name.Contains("Host.Variables")) {
-        
+
           // Find the index of the first '<'
           int startIndex = name.IndexOf('<') + 1;
           // Find the index of the first '.' after the '<'
@@ -104,6 +108,8 @@ namespace Microsoft.Dafny
           var explicitBoundaryCase2Match = GetExplicitBoundaryCase2Match(stepConstructors, hostModule);
           var useNamedHostStepHelper = helperStepFieldInfo != null && helperPredicateNames.Contains($"DistributedSystem.Next{hostModule}Step");
 
+          string extraVariables = "";
+          string extraVariablesType = "";
           var recvInv = new ReceiveInvariant(
             hostModule,
             hostField,
@@ -112,7 +118,9 @@ namespace Microsoft.Dafny
             useNamedHostStepHelper,
             explicitBoundaryCase2Match,
             helperStepFieldInfo?.ActorFieldName,
-            helperStepFieldInfo?.MsgOpsFieldName);
+            helperStepFieldInfo?.MsgOpsFieldName,
+            extraVariables,
+            extraVariablesType);
           Console.WriteLine(recvInv);
           res.Add(recvInv);
         }
@@ -260,23 +268,26 @@ namespace Microsoft.Dafny
     private string Step       { get; }      // name of the transition, could be a CSV if this is an intra-message intersection skolemization
     private string WitnessName { get; }     // name of the witness for custom invariants
     private List<BasiliskField> Fields { get; }     // host fields that go into witness condition
+    private List<BasiliskField> ExtraArguments { get; }
 
-    public ReceiveSkolemization(bool isHint, string hostModule, string hostField, bool isNullMsg, string step, List<BasiliskField> fields) {
+    public ReceiveSkolemization(bool isHint, string hostModule, string hostField, bool isNullMsg, string step, List<BasiliskField> fields, List<BasiliskField> extraArguments) {
       IsHint = isHint;
       HostModule = hostModule;
       HostField = hostField;
       IsNullMsg = isNullMsg;
       Step = step;  // Step could be a CSV if this is an intra-message intersection skolemization
       Fields = fields;
+      ExtraArguments = extraArguments;
     }
 
-    public ReceiveSkolemization(bool isHint, string hostModule, string hostField, bool isNullMsg, string step, List<BasiliskField> fields, string witnessName, int id) {
+    public ReceiveSkolemization(bool isHint, string hostModule, string hostField, bool isNullMsg, string step, List<BasiliskField> fields, List<BasiliskField> extraArguments, string witnessName, int id) {
       IsHint = isHint;
       HostModule = hostModule;
       HostField = hostField;
       IsNullMsg = isNullMsg;
       Step = step;  // Step could be a CSV if this is an intra-message intersection skolemization
       Fields = fields;
+      ExtraArguments = extraArguments;
       WitnessName = witnessName;
       Id = id;
     }
@@ -349,7 +360,7 @@ namespace Microsoft.Dafny
             fields.Add(field);
           }
           var isNullMsg = !name.Contains("Receive");
-          var recvSkolem = new ReceiveSkolemization(true, hostModule, hostField, isNullMsg, step, fields, name, id);
+          var recvSkolem = new ReceiveSkolemization(true, hostModule, hostField, isNullMsg, step, fields, [], name, id);
           res.Add(recvSkolem);
         }
       }
@@ -412,19 +423,19 @@ namespace Microsoft.Dafny
       foreach (var msgFootprint in hostFootprint.MsgFootprints) {
         var msgType = msgFootprint.Key;
         foreach (var stepFootprint in msgFootprint.Value) {
-          var step = stepFootprint.Step;
+          var step = stepFootprint.Value;
 
           // Special naming for null-recv steps
           if (msgType.Equals(NullMsg)) {
-            step = "Null" + step;
+            step.Step = "Null" + step.Step;
           }
 
-          stepMap.Add(step, new HashSet<string>());
-          foreach (var field in stepFootprint.Fields) {
+          stepMap.Add(step.Step, new HashSet<string>());
+          foreach (var field in step.Fields) {
             if (!fieldsMap.ContainsKey(field.Name)) {
               fieldsMap.Add(field.Name, field);
             }
-            stepMap[step].Add(field.Name);
+            stepMap[step.Step].Add(field.Name);
           }
         }
       }
@@ -452,12 +463,6 @@ namespace Microsoft.Dafny
         if (kvp.Value.Count == 0) {
           continue;
         }
-        var stepsSet = new HashSet<string>(kvp.Key.Split(',').Select(s => s.Trim()));
-        if (stepsSet.Count > 1 && stepsSet.Any(s => s.Contains("Null"))) {
-          Console.Write("Intersection with Null-receive currently not supported");
-          continue;
-          // Debug.Assert(false, "Intersection with Null-receive not supported");
-        }
 
         var steps = kvp.Key;
         var fields = new List<BasiliskField>();
@@ -465,12 +470,12 @@ namespace Microsoft.Dafny
           fields.Add(fieldsMap[fieldName]);
         }
 
-        if (steps.StartsWith("Null")) {
-          steps = steps.Substring("Null".Length);
-          var recvSkolem = new ReceiveSkolemization(false, hostModule, hostField, true, steps, fields);
+        if (steps.Contains("Null")) {
+          steps = steps.Replace("Null", "");
+          var recvSkolem = new ReceiveSkolemization(false, hostModule, hostField, true, steps, fields, []);
           res.Add(recvSkolem);
         } else {
-          var recvSkolem = new ReceiveSkolemization(false, hostModule, hostField, false, steps, fields);
+          var recvSkolem = new ReceiveSkolemization(false, hostModule, hostField, false, steps, fields, []);
           res.Add(recvSkolem);
         }
       }
@@ -543,22 +548,28 @@ namespace Microsoft.Dafny
 
     private string EnsuresStep() {
       var steps = Step.Split(',').Select(s => s.Trim()).ToList();
-      var isRecvSend = steps[0].Contains("Receive") && Step.Contains("Send");  // is this a receive-and-send step?
       var res = new List<string>();
       foreach (var step in steps) {
-        if (isRecvSend) {
+        var isRecv = step.Contains("Receive");
+        var isSend = step.Contains("Send");
+        if (isRecv && isSend) {
           res.Add(
-            string.Format("{0}.{1}(c.{2}[idx], v.History(j).{2}[idx], v.History(j+1).{2}[idx], inMsg, outMsg)",
+            string.Format("(msgOps.recv.Some? && msgOps.send.Some? && {0}.{1}(c.{2}[idx], v.History(j).{2}[idx], v.History(j+1).{2}[idx], step, msgOps.recv.value, msgOps.send.value))",
+            HostModule, step, HostField)
+          );
+        } else if (isRecv) {
+          res.Add(
+            string.Format("(msgOps.recv.Some? && {0}.{1}(c.{2}[idx], v.History(j).{2}[idx], v.History(j+1).{2}[idx], step, msgOps.recv.value))",
             HostModule, step, HostField)
           );
         } else {
           res.Add(
-            string.Format("{0}.{1}(c.{2}[idx], v.History(j).{2}[idx], v.History(j+1).{2}[idx], inMsg)",
+            string.Format("(msgOps.send.Some? && {0}.{1}(c.{2}[idx], v.History(j).{2}[idx], v.History(j+1).{2}[idx], step, msgOps.send.value))",
             HostModule, step, HostField)
           );
         }
       }
-      return string.Join(" || ", res);
+      return string.Join("\n    || ", res);
     }
 
     // Additional arguments beyond the mandatory "c: Constants, v: Variables, i: nat, idx: int"
@@ -598,6 +609,8 @@ namespace Microsoft.Dafny
         string typeB = parts[1].Trim();
         var suffix = FormalsForType(typeB, count + 1);
         return (string.Format("a{0}: {1}, {2}", count, typeA, suffix.res), suffix.nextCount);
+      // } else if (type.StartsWith("MonotonicMapOfMaps")) {
+      // }
       } else {
         // Base case
         return (string.Format("a{0}: {1}", count, type), count + 1);
@@ -625,6 +638,7 @@ namespace Microsoft.Dafny
         string typeB = parts[1].Trim();
         var suffix = WitnessArgsForType(typeB, count + 1);
         return (string.Format("a{0}, {1}", count, suffix.res), suffix.nextCount);
+      // } else if (type.StartsWith("MonotonicMapOfMaps")) {
       } else if (type.StartsWith("seq<")) {
         // Recursive case: Dafny built-in seq
         int startIndex = type.IndexOf('<');
@@ -679,9 +693,10 @@ namespace Microsoft.Dafny
           string innerContent = type.Substring(startIndex + 1, endIndex - startIndex - 1);
           string[] parts = innerContent.Split(new[] { ',' }, 2);
           string typeB = parts[1].Trim();
-          var nextName = string.Format("{0}[{1}].m", name, key);
+          var nextName = string.Format("{0}.m[{1}].m", name, key);
           var suffix = WitnessExpressionForType(typeB, nextName, count + 1);
           return (string.Format("{0} in v.History(i).{1}[idx].{2}.m\n  && {3}", key, HostField, name, suffix.res), suffix.nextCount);
+        // } else if (type.StartsWith("MonotonicMap<")) {
         } else if (type.StartsWith("seq<")) {
           // Recursive case: Dafny built-in seq
           var key = string.Format("a{0}", count);

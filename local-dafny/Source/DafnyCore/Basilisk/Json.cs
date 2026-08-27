@@ -15,19 +15,21 @@ public class BasiliskField {
 public class StepFootprint {
   public string Step { get; set;}
   public List<BasiliskField> Fields { get; set;}
+  public List<BasiliskField> ExtraArguments { get; set;}
 
   public StepFootprint(string step) {
     Step = step;
     Fields = new List<BasiliskField>();
+    ExtraArguments = new List<BasiliskField>();
   }
 }
 
 public class HostFootprint {
   // Map from message type to list of step footprints
-  public Dictionary<string, List<StepFootprint>> MsgFootprints { get; set;}
+  public Dictionary<string, Dictionary<string, StepFootprint>> MsgFootprints { get; set;}
 
   public HostFootprint() {
-    MsgFootprints = new Dictionary<string, List<StepFootprint>>();
+    MsgFootprints = new Dictionary<string, Dictionary<string, StepFootprint>>();
   }
 }
 

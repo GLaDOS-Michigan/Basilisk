@@ -1,6 +1,6 @@
 {
-  "InitImpliesMonotonicityInvHeader": 
-    [ 
+  "InitImpliesMonotonicityInvHeader":
+    [
       "lemma InitImpliesMonotonicityInv(c: Constants, v: Variables)",
       "  requires Init(c, v)",
       "  ensures MonotonicityInv(c, v)",
@@ -126,7 +126,7 @@
       "}"
     ],
   "ValidVariables":
-    [  
+    [
       "// Bundle of Variable properties",
       "ghost predicate ValidVariables(c: Constants, v: Variables)",
       "  requires v.WF(c)",
@@ -157,7 +157,7 @@
     ],
   "VariableNextProperties":
     [
-      "lemma VariableNextProperties(c: Constants, v: Variables, v': Variables)", 
+      "lemma VariableNextProperties(c: Constants, v: Variables, v': Variables)",
       "  requires v.WF(c)",
       "  requires Next(c, v, v')",
       "  ensures 1 < |v'.history|",
@@ -230,14 +230,14 @@
       "}"
     ],
   "InitImpliesOwnershipInv":
-    [ 
+    [
       "lemma InitImpliesOwnershipInv(c: Constants, v: Variables)",
       "  requires Init(c, v)",
       "  ensures OwnershipInv(c, v)",
       "{}"
     ],
   "OwnershipInvInductiveHeader":
-    [ 
+    [
       "lemma OwnershipInvInductive(c: Constants, v: Variables, v': Variables)",
       "  requires OwnershipInv(c, v)",
       "  requires Next(c, v, v')",
@@ -310,7 +310,7 @@
       "    }",
       "  }",
       "}"
-    ], 
+    ],
   "ObligationsSeparator":
     [
       "/***************************************************************************************",
@@ -349,11 +349,11 @@
       "}"
     ],
   "AtMostOwnerPerKeyImpliesSafetyLemmaHeader":
-    [ 
+    [
       "lemma AtMostOwnerPerKeyImpliesSafety(c: Constants, v: Variables)",
       "  requires v.WF(c)"
     ],
-  "HostReceiveValidity" : 
+  "HostReceiveValidity" :
   [
     "ghost predicate {{:opaque}} {0}ReceiveValidity(c: Constants, v: Variables)",
     "  requires v.WF(c)",
@@ -826,7 +826,7 @@
     "  }}",
     "}}"
   ],
-  "StepWitnessCondition" : 
+  "StepWitnessCondition" :
   [
     "ghost predicate {0}(c: Constants, v: Variables, i: nat, idx: int, {1})",
     "  requires v.WF(c)",
@@ -836,10 +836,10 @@
     "  {3}",
     "}}"
   ],
-  "ReceiveSkolemization" : 
+  "ReceiveSkolemization" :
   [
     "lemma {0}(c: Constants, v: Variables, i: nat, idx: int, {1})",
-    "  returns (j: nat, inMsg: Message)",
+    "  returns (j: nat, step: {2}.Step, msgOps: MessageOps)",
     "  requires v.WF(c)",
     "  requires ValidHistory(c, v)",
     "  requires {2}ReceiveValidity(c, v)",
@@ -850,22 +850,23 @@
     "  ensures !{4}(c, v, j, idx, {5})",
     "  ensures {4}(c, v, j+1, idx, {5})",
     "  ensures {6}",
-    "  ensures inMsg in v.network.sentMsgs",
+    "  ensures {2}.NextStep(c.{3}[idx], v.History(j).{3}[idx], v.History(j+1).{3}[idx], step, msgOps)",
+    "  ensures msgOps.recv.Some? ==> msgOps.recv.value in v.network.sentMsgs",
     "  decreases i",
     "{{",
     "  reveal_ValidHistory();",
     "  var xj, xstep, xmsgOps := {2}ReceiveSkolemization(c, v, i, idx);",
     "  if !{4}(c, v, xj, idx, {5}) {{",
-    "    j, inMsg := xj, xmsgOps.recv.value;",
+    "    j, step, msgOps := xj, xstep, xmsgOps;",
     "  }} else {{",
-    "    j, inMsg := {0}(c, v, xj, idx, {5});",
+    "    j, step, msgOps := {0}(c, v, xj, idx, {5});",
     "  }}",
     "}}"
   ],
-  "ReceiveSkolemization2" : 
+  "ReceiveSkolemization2" :
   [
     "lemma {0}(c: Constants, v: Variables, i: nat, idx: int, {1})",
-    "  returns (j: nat, inMsg: Message, outMsg: Message)",
+    "  returns (j: nat, step: {2}.Step, msgOps: MessageOps)",
     "  requires v.WF(c)",
     "  requires ValidHistory(c, v)",
     "  requires {2}ReceiveValidity(c, v)",
@@ -876,19 +877,20 @@
     "  ensures !{4}(c, v, j, idx, {5})",
     "  ensures {4}(c, v, j+1, idx, {5})",
     "  ensures {6}",
-    "  ensures inMsg in v.network.sentMsgs",
+    "  ensures {2}.NextStep(c.{3}[idx], v.History(j).{3}[idx], v.History(j+1).{3}[idx], step, msgOps)",
+    "  ensures msgOps.recv.Some? ==> msgOps.recv.value in v.network.sentMsgs",
     "  decreases i",
     "{{",
     "  reveal_ValidHistory();",
     "  var xj, xstep, xmsgOps := {2}ReceiveSkolemization(c, v, i, idx);",
     "  if !{4}(c, v, xj, idx, {5}) {{",
-    "    j, inMsg, outMsg := xj, xmsgOps.recv.value, xmsgOps.send.value;",
+    "    j, step, msgOps := xj, xstep, xmsgOps;",
     "  }} else {{",
-    "    j, inMsg, outMsg := {0}(c, v, xj, idx, {5});",
+    "    j, step, msgOps := {0}(c, v, xj, idx, {5});",
     "  }}",
     "}}"
   ],
-  "ReceiveSkolemizationNull" : 
+  "ReceiveSkolemizationNull" :
   [
     "lemma {0}(c: Constants, v: Variables, i: nat, idx: int, {1})",
     "  returns (j: nat, step: {2}.Step, msgOps: MessageOps)",

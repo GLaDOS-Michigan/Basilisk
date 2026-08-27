@@ -17,7 +17,7 @@ public class RegularInvariantsDriver {
   public MessageInvariantsFile msgInvFile;
   public MonotonicityInvariantsFile monoInvFile;
   public OwnershipInvariantsFile ownerInvFile;
-  public Dictionary<String, MessageUpdates> footprintMap;
+  public Dictionary<String, HostFootprint> footprintMap;
 
   // Constructor
   public RegularInvariantsDriver(DafnyOptions options, Program program)
@@ -27,7 +27,7 @@ public class RegularInvariantsDriver {
     msgInvFile = new MessageInvariantsFile();
     monoInvFile = new MonotonicityInvariantsFile();
     ownerInvFile = new OwnershipInvariantsFile();
-    footprintMap = new Dictionary<String, MessageUpdates>();
+    footprintMap = new Dictionary<String, HostFootprint>();
   }
 
   public void Resolve() {
@@ -52,7 +52,7 @@ public class RegularInvariantsDriver {
       ResolveMonotonicityInvariants(dsHosts, program);
       ResolveSendInvariants(dsHosts, program);
       ResolveReceiveInvariants(dsHosts, program);
-    } 
+    }
     if (options.ownershipInvs) {
       ResolveOwnershipInvariants();
     }
@@ -95,7 +95,7 @@ public class RegularInvariantsDriver {
   public static bool isTransition(Function func){
     if(func.Name == "Next" || func.Name == "NextStep"){
       return false;
-    } 
+    }
     foreach(var param in func.Formals){
       if (param.DisplayName == "v'"){
         return true;
@@ -112,7 +112,7 @@ public class RegularInvariantsDriver {
     else if(expr is LetExpr letExpr){
       return responseType(letExpr.Body);
     }
-    else if(expr is ExprDotName checkExpr && checkExpr.Lhs is NameSegment nameSegment 
+    else if(expr is ExprDotName checkExpr && checkExpr.Lhs is NameSegment nameSegment
       && nameSegment.Name == "inMsg"){
       return checkExpr.SuffixName.Substring(0, checkExpr.SuffixName.Length - 1);
     }
@@ -120,77 +120,80 @@ public class RegularInvariantsDriver {
   }
 
   private bool isMonotonicDatatype(DatatypeDecl datatype){
-    return datatype != null && datatype.Name.StartsWith("Monotonic") 
+    return datatype != null && datatype.Name.StartsWith("Monotonic")
       && datatype.ConstructorsByName.Count == 1 && datatype.TypeArgs.Count == 0;
-  } 
-  private void getUpdatedVariables(DatatypeUpdateExpr updateExpr, List<String> updatedVariables, String prefix){
+  }
+  private void getUpdatedVariables(DatatypeUpdateExpr updateExpr, List<String> updatedVariablesName, StepFootprint stepFootprint, String prefix){
     foreach(Tuple<IToken, string, Expression> update in updateExpr.Updates){
       if (update.Item3 is DatatypeUpdateExpr subUpdateExpr){
-        getUpdatedVariables(subUpdateExpr, updatedVariables, prefix + update.Item2 + ".");
+        getUpdatedVariables(subUpdateExpr, updatedVariablesName, stepFootprint, prefix + update.Item2 + ".");
       }
       else{
         var datatype = update.Item3.Type.AsDatatype;
         if (isMonotonicDatatype(datatype)){
           foreach(var formal in datatype.Ctors[0].Formals){
-            var updatedVariable = prefix + update.Item2 + "." + formal.DafnyName;
-            if (!updatedVariables.Contains(updatedVariable)){
-              updatedVariables.Add(updatedVariable);
+            var updatedVariable = prefix + update.Item2 + "." + formal.Name;
+            if (!updatedVariablesName.Contains(updatedVariable)){
+              updatedVariablesName.Add(updatedVariable);
+              stepFootprint.Fields.Add(new BasiliskField(updatedVariable, formal.Type.ToString()));
             }
           }
         }
         else{
-          var updatedVariable = prefix + update.Item2 + ": " + update.Item3.Type.ToString();
-          if (!updatedVariables.Contains(updatedVariable)){
-            updatedVariables.Add(updatedVariable);
+          var updatedVariable = prefix + update.Item2;
+          if (!updatedVariablesName.Contains(updatedVariable)){
+            updatedVariablesName.Add(updatedVariable);
+            stepFootprint.Fields.Add(new BasiliskField(update.Item2, update.Item3.Type.ToString()));
           }
         }
-        
+
       }
     }
   }
-  private void findUpdatedVariables(Expression expr, List<String> updatedVariables){
+  private void findUpdatedVariables(Expression expr, List<String> updatedVariablesName, StepFootprint stepFootprint){
     if (expr is BinaryExpr binaryExpr){
-      findUpdatedVariables(binaryExpr.E0, updatedVariables);
-      findUpdatedVariables(binaryExpr.E1, updatedVariables);
+      findUpdatedVariables(binaryExpr.E0, updatedVariablesName, stepFootprint);
+      findUpdatedVariables(binaryExpr.E1, updatedVariablesName, stepFootprint);
     }
     else if(expr is LetExpr letExpr){
-      findUpdatedVariables(letExpr.Body, updatedVariables);
+      findUpdatedVariables(letExpr.Body, updatedVariablesName, stepFootprint);
     }
     else if (expr is ITEExpr ifThenElseExpr){
-      findUpdatedVariables(ifThenElseExpr.Thn, updatedVariables);
-      findUpdatedVariables(ifThenElseExpr.Els, updatedVariables);
+      findUpdatedVariables(ifThenElseExpr.Thn, updatedVariablesName, stepFootprint);
+      findUpdatedVariables(ifThenElseExpr.Els, updatedVariablesName, stepFootprint);
     }
     else if(expr is DatatypeUpdateExpr updateExpr){
-      getUpdatedVariables(updateExpr, updatedVariables, "");
+      getUpdatedVariables(updateExpr, updatedVariablesName, stepFootprint, "");
     }
     return;
 
   }
-  private void updateFootprint(Function func, MessageUpdates footprint){
+  private void updateFootprint(Function func, HostFootprint hostFootprint){
     var responseMsg = responseType(func.Body);
-    var updatedVariables = new List<String>(); 
-    findUpdatedVariables(func.Body, updatedVariables);
-    if(updatedVariables.Count != 0){
-      UpdatedFunctions updatedFunctions = footprint.updatedFunctions.GetOrCreate(responseMsg, () => new UpdatedFunctions());
-      updatedFunctions.updatedParameters.Add(func.Name, updatedVariables);
+    var updatedVariablesName = new List<String>();
+    var stepFootprint = new StepFootprint(func.Name);
+    findUpdatedVariables(func.Body, updatedVariablesName, stepFootprint);
+    if(stepFootprint.Fields.Count != 0){
+      Dictionary<string, StepFootprint> stepFootprints = hostFootprint.MsgFootprints.GetOrCreate(responseMsg, () => new Dictionary<string, StepFootprint>());
+      stepFootprints.Add(func.Name, stepFootprint);
     }
 
     return;
-  } 
+  }
   private void generateFootprint(Program program) {
     // Find Send Predicate definitions
     foreach (var kvp in program.ModuleSigs) {
-      MessageUpdates messageUpdates = new MessageUpdates();
+      HostFootprint hostFootprint = new HostFootprint();
       foreach (var topLevelDecl in ModuleDefinition.AllFunctions(kvp.Value.ModuleDef.TopLevelDecls.ToList())) {
         var name = topLevelDecl.Name;
         // var isSendPredicate = (name.StartsWith("Receive") && name.Contains("Send"));
 
         if (topLevelDecl.FullDafnyName.Contains("Host") && isTransition(topLevelDecl)) {  // identifying marker for Send Predicate
-          updateFootprint(topLevelDecl, messageUpdates);
+          updateFootprint(topLevelDecl, hostFootprint);
         }
       }
-      if (messageUpdates.updatedFunctions.Count > 0){
-        footprintMap.Add(kvp.Key.Name, messageUpdates);
+      if (hostFootprint.MsgFootprints.Count > 0){
+        footprintMap.Add(kvp.Key.Name, hostFootprint);
       }
     }
   }
@@ -209,7 +212,7 @@ public class RegularInvariantsDriver {
     }
 
     // Create SendInvariant objects
-    foreach (var sp in sendPredicateDefs) {   
+    foreach (var sp in sendPredicateDefs) {
       var sendInv = SendInvariant.FromFunction(sp, dsHosts);
       msgInvFile.AddSendInvariant(sendInv);
     }
@@ -223,11 +226,10 @@ public class RegularInvariantsDriver {
     }
 
     // Receive skolemization objects, by reading json
-    var footprintPath = Path.GetDirectoryName(program.FullName) + "/footprintsAutogen.json";    
+    var footprintPath = Path.GetDirectoryName(program.FullName) + "/footprintsAutogen.json";
     string rawJson = File.ReadAllText(footprintPath);
-    var parsedJson = JsonSerializer.Deserialize<Dictionary<string, object>>(rawJson);
-    var footprints = ParseFootprintJson(parsedJson);
-    var recvSkolemizationsList = ReceiveSkolemization.FromFootprints(dsHosts, footprints);
+    var parsedJson = JsonSerializer.Deserialize<Dictionary<string, HostFootprint>>(rawJson);
+    var recvSkolemizationsList = ReceiveSkolemization.FromFootprints(dsHosts, parsedJson);
     foreach (var recvSkolem in recvSkolemizationsList) {
       msgInvFile.AddReceiveSkolemization(recvSkolem);
     }
@@ -301,44 +303,6 @@ public class RegularInvariantsDriver {
     }
     Debug.Assert(false, "Cannot find field");
     return "dummyType";
-  } 
-
-  // Returns map of host name to HostFootprint
-  public Dictionary<string, HostFootprint> ParseFootprintJson(Dictionary<string, object> data) {
-    var result = new Dictionary<string, HostFootprint>();
-
-    foreach (var kvp in data) {
-      Debug.Assert(kvp.Value is JsonElement);
-      var msgElement = (JsonElement)kvp.Value;
-      Debug.Assert(msgElement.ValueKind == JsonValueKind.Object);
-
-      var hostName = kvp.Key;
-      var hostFootprint = new HostFootprint();
-
-      var msgs = JsonSerializer.Deserialize<Dictionary<string, object>>(msgElement.GetRawText());
-      foreach (var msgKvp in msgs) {
-        var msg = msgKvp.Key;
-        var steps = new List<StepFootprint>();
-
-        var stepElement = (JsonElement) msgKvp.Value;
-        var stepsJson = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(stepElement.GetRawText());
-
-        
-        foreach (var stepKvp in stepsJson) { 
-          var stepFootprint = new StepFootprint(stepKvp.Key);
-
-          foreach (var item in stepKvp.Value.EnumerateArray()) {
-            var nameTypePair =  item.ToString().Split(new[] { ':' }, 2);
-            var field = new BasiliskField(nameTypePair[0].Trim(), nameTypePair[1].Trim());
-            stepFootprint.Fields.Add(field);
-          }
-          steps.Add(stepFootprint);
-        }
-        hostFootprint.MsgFootprints.Add(msg, steps);
-      }
-      result.Add(hostName, hostFootprint);
-    }
-    return result;
   }
 
   // Returns the Dafny module with the given name
@@ -373,7 +337,7 @@ public class RegularInvariantsDriver {
       string msgInvOutputFullname = Path.GetDirectoryName(program.FullName) + "/messageInvariantsAutogen.dfy";
       Console.WriteLine(string.Format("Writing message invariants to {0}", msgInvOutputFullname));
       File.WriteAllText(msgInvOutputFullname, msgInvString);
-    } 
+    }
     if (options.ownershipInvs) {
       // Write ownership invariants
       string ownerInvString = RegularInvPrinter.PrintOwnershipInvariants(ownerInvFile, program.FullName);

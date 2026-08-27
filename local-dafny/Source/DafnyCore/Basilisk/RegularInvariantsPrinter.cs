@@ -15,9 +15,9 @@ namespace Microsoft.Dafny
     private static readonly string customInvariantsFile = "customMessageInvariants.dfy";
     private static readonly string customInvariantsModule = "CustomMessageInvariants";
     private static readonly string[] imports = {"Types", "UtilitiesLibrary", "MonotonicityLibrary", "DistributedSystem"};
-    private static readonly string DafnyRoot = $"{System.AppDomain.CurrentDomain.BaseDirectory}/../";
+    private static readonly string DafnyRoot = $"{System.AppDomain.CurrentDomain.BaseDirectory}/../../";
     private static readonly string templatePath = $"{DafnyRoot}/Source/DafnyCore/Basilisk/templates.json";
-    
+
     private static readonly Dictionary<string, string[]> Template = JsonConvert.DeserializeObject<Dictionary<string, string[]>>(File.ReadAllText(templatePath));
 
     public static string GetFromTemplate(string key, int indent) {
@@ -46,14 +46,8 @@ namespace Microsoft.Dafny
         res.AppendLine();
       }
     }
-    public static string PrintFootprintJson(Dictionary<String, MessageUpdates> footprintMap) {
-      //Ugly code to get it into nested dictionary format in order to place in JSON
-      Dictionary<String, Dictionary<String, Dictionary<String, List<String>>>> footPrintDictNested 
-                    = new Dictionary<String, Dictionary<String, Dictionary<String, List<String>>>>();
-      foreach (KeyValuePair<String, MessageUpdates> moduleKvp in footprintMap){
-        footPrintDictNested.Add(moduleKvp.Key, moduleKvp.Value.unflattenDict());
-      }
-      string output = JsonConvert.SerializeObject(footPrintDictNested, Newtonsoft.Json.Formatting.Indented);
+    public static string PrintFootprintJson(Dictionary<String, HostFootprint> footprintMap) {
+      string output = JsonConvert.SerializeObject(footprintMap, Newtonsoft.Json.Formatting.Indented);
       return output;
     }
     public static string PrintMonotonicityInvariants(MonotonicityInvariantsFile file, string sourceFileName) {
@@ -64,7 +58,7 @@ namespace Microsoft.Dafny
       res.AppendLine($"/// This file is auto-generated from {sourceFileName}");
       res.AppendLine($"/// Generated {DateTime.Now.ToString("MM/dd/yyyy HH:mm")} {TimeZoneInfo.Local.StandardName}");
 
-      // Module preamble 
+      // Module preamble
       foreach (string i in includes) {
         res.AppendLine(String.Format("include \"{0}\"", i));
       }
@@ -90,12 +84,18 @@ namespace Microsoft.Dafny
       res.AppendLine("}");
       res.AppendLine();
 
+      // foreach (var inv in file.GetInvariants()) {
+      //   res.Append(String.Format(GetFromTemplate("MonotonicityInvInductiveIndividualHeader", 0), inv.GetPredicateName()));
+      //   res.AppendLine("}");
+      //   res.AppendLine("");
+      // }
+
       // Proof obligations
       res.AppendLine("// Base obligation");
       res.Append(GetFromTemplate("InitImpliesMonotonicityInvHeader", 0));
       res.AppendLine("}");
       res.AppendLine();
-      
+
       res.AppendLine("// Inductive obligation");
       PrintMonotonicityInvInductive(res, invariants);
       res.AppendLine();
@@ -104,7 +104,7 @@ namespace Microsoft.Dafny
       res.AppendLine("} // end module MonotonicityInvariants");
       return res.ToString();
     } // end function PrintMonotonicityInvariants
-    
+
 
     public static string PrintMessageInvariants(MessageInvariantsFile file, string sourceFileName) {
       var res = new StringBuilder();
@@ -113,7 +113,7 @@ namespace Microsoft.Dafny
       res.AppendLine($"/// This file is auto-generated from {sourceFileName}");
       res.AppendLine($"/// Generated {DateTime.Now.ToString("MM/dd/yyyy HH:mm")} {TimeZoneInfo.Local.StandardName}");
 
-      // Module preamble 
+      // Module preamble
       foreach (string i in includes) {
         res.AppendLine(String.Format("include \"{0}\"", i));
       }
@@ -143,7 +143,7 @@ namespace Microsoft.Dafny
         res.Append($"msg.{si.GetMessageType()}? ");
         res.AppendLine($"then 0 <= msg.Src() < |c.{si.GetVariableField()}|");
         res.Append("  else ");
-      } 
+      }
       res.AppendLine("true");
       res.AppendLine("}");
       res.AppendLine();
@@ -186,7 +186,7 @@ namespace Microsoft.Dafny
       res.AppendLine();
 
       res.AppendLine("// Inductive obligation");
-      res.AppendLine(GetFromTemplate("MessageInvInductiveHeader", 0)); 
+      res.AppendLine(GetFromTemplate("MessageInvInductiveHeader", 0));
       res.AppendLine("{");
       res.AppendLine("  InvNextValidVariables(c, v, v');");
       foreach (var inv in file.SendInvariants) {
@@ -200,6 +200,8 @@ namespace Microsoft.Dafny
 
       // Begin proofs section
       res.AppendLine(GetFromTemplate("AuxProofsSeparator", 0));
+
+      res.AppendLine(GetFromTemplate("InvNextValidMessages", 0));
 
       // InvNextProofs
       foreach (var si in file.SendInvariants) {
@@ -226,13 +228,13 @@ namespace Microsoft.Dafny
 
     // Warning: Only supports up to two host types here
     public static string PrintOwnershipInvariants(OwnershipInvariantsFile file, string sourceFileName) {
-      var invariants = new List<string>(); // keep track of a list of invariants 
-      
+      var invariants = new List<string>(); // keep track of a list of invariants
+
       var res = new StringBuilder();
       res.AppendLine($"/// This file is auto-generated from {sourceFileName}");
       res.AppendLine($"/// Generated {DateTime.Now.ToString("MM/dd/yyyy HH:mm")} {TimeZoneInfo.Local.StandardName}");
 
-      // Module preamble 
+      // Module preamble
       foreach (string i in includes) {
         res.AppendLine(String.Format("include \"{0}\"", i));
       }
@@ -376,7 +378,7 @@ namespace Microsoft.Dafny
       }
       res.AppendLine("}");
       res.AppendLine();
-      
+
       // InitImpliesOwnershipInv
       res.AppendLine(GetFromTemplate("InitImpliesOwnershipInv", 0));
 
@@ -468,6 +470,6 @@ namespace Microsoft.Dafny
     // Print the InvNextHostOwnKey lemma for given host type.
     private static void PrintInvNextHostOwnKey(StringBuilder res, string mod, string field, string otherMod, string otherField) {
       res.AppendLine(string.Format(GetFromTemplate("InvNextHostOwnKey", 0), mod, field, otherMod, otherField));
-    }    
+    }
   } // end class MessageInvariantsFile
 }

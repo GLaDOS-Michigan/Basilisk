@@ -11,13 +11,17 @@ namespace Microsoft.Dafny
     private string module;   // name of the module this function belongs
     private string variableField;   // which field in distributedSystem.Hosts?
     private bool isRecvAndSend;  // is this a Basilisk Receive-And-Send action
+    private string extraVariables;
+    private string extraVariablesType;
 
-    public SendInvariant(string functionName, string msgType, string module, string variableField, bool isRecvAndSend) {
+    public SendInvariant(string functionName, string msgType, string module, string variableField, bool isRecvAndSend, string extraVariables, string extraVariablesType) {
       this.functionName = functionName;
       this.msgType = msgType;
       this.module = module;
       this.variableField = variableField;
       this.isRecvAndSend = isRecvAndSend;
+      this.extraVariables = extraVariables;
+      this.extraVariablesType = extraVariablesType;
     }
 
     public static SendInvariant FromFunction(Function sendPredicate, DatatypeDecl dsHosts) {
@@ -30,7 +34,7 @@ namespace Microsoft.Dafny
       // Extract module and msgType
       var module = ExtractSendInvariantModule(sendPredicate);
       var msgType = ExtractSendInvariantMsgType(sendPredicate, isRecvAndSend);
-      
+
       // Extract field name in DistributedSystem.Hosts of type seq<[module].Variables>
       string variableField = null;
       foreach (var formal in dsHosts.GetGroundingCtor().Formals) {
@@ -41,7 +45,13 @@ namespace Microsoft.Dafny
       }
       Debug.Assert(variableField != null, "variableField should not be null");
 
-      var sendInv = new SendInvariant(sendPredicate.Name, msgType, module, variableField, isRecvAndSend);
+      string extraVariables = "";
+      string extraVariablesType = "";
+      for (int i = 5 + (isRecvAndSend ? 1 : 0); i < sendPredicate.Formals.Count; i++) {
+        extraVariables += $", {sendPredicate.Formals[i].CompileName}";
+        extraVariablesType += $", {sendPredicate.Formals[i].CompileName}: {sendPredicate.Formals[i].Type.ToString()}";
+      }
+      var sendInv = new SendInvariant(sendPredicate.Name, msgType, module, variableField, isRecvAndSend, extraVariables, extraVariablesType);
       Console.WriteLine(sendInv);
       Console.WriteLine();
       return sendInv;
@@ -63,7 +73,7 @@ namespace Microsoft.Dafny
     private static string ExtractSendInvariantModule(Function func) {
       return func.FullDafnyName.Substring(0, func.FullDafnyName.IndexOf('.'));
     }
-    
+
     public string GetName() {
       return this.functionName;
     }
@@ -120,10 +130,10 @@ namespace Microsoft.Dafny
             "  requires msg in v.network.sentMsgs\n" +
             string.Format("  requires msg.{0}?\n", msgType) +
             "{\n" +
-            "  exists i, inMsg ::\n" + 
+            string.Format("  exists i, step, inMsg {{:trigger {0}.{1}(c.{2}[msg.Src()], v.History(i).{2}[msg.Src()], v.History(i+1).{2}[msg.Src()], step, inMsg, msg)}} ::\n", module, functionName, variableField) +
             "    && v.ValidHistoryIdxStrict(i)\n" +
             "    && ExistingMessage(v, inMsg)\n" +
-          string.Format("    && {0}.{1}(c.{2}[msg.Src()], v.History(i).{2}[msg.Src()], v.History(i+1).{2}[msg.Src()], inMsg, msg)\n", module, functionName, variableField) +
+          string.Format("    && {0}.{1}(c.{2}[msg.Src()], v.History(i).{2}[msg.Src()], v.History(i+1).{2}[msg.Src()], step, inMsg, msg)\n", module, functionName, variableField) +
             "}\n";
       return res;
     }
@@ -135,9 +145,9 @@ namespace Microsoft.Dafny
             "{\n" +
           string.Format("  forall msg | msg in v.network.sentMsgs && msg.{0}?\n", msgType) +
             "  ::\n" +
-            "  (exists i ::\n" + 
+            "  (exists i, step ::\n" +
               "    && v.ValidHistoryIdxStrict(i)\n" +
-          string.Format("    && {0}.{1}(c.{2}[msg.Src()], v.History(i).{2}[msg.Src()], v.History(i+1).{2}[msg.Src()], msg)\n", module, functionName, variableField) +
+          string.Format("    && {0}.{1}(c.{2}[msg.Src()], v.History(i).{2}[msg.Src()], v.History(i+1).{2}[msg.Src()], step, msg)\n", module, functionName, variableField) +
           "  )\n" +
              "}\n";
       return res;
@@ -153,7 +163,7 @@ namespace Microsoft.Dafny
 
     private string toLemmaRecvSend() {
       var res = string.Format("lemma {0}(c: Constants, v: Variables, v': Variables)\n", GetLemmaName());
-      var assertExistingMessageBy = 
+      var assertExistingMessageBy =
             "      assert ExistingMessage(v', inMsg) by {\n" +
             "        reveal_ExistingMessage();\n" +
             "      }\n";
@@ -167,17 +177,18 @@ namespace Microsoft.Dafny
             string.Format("  forall msg | msg in v'.network.sentMsgs && msg.{0}?\n", msgType) +
             string.Format("  ensures {0}Body(c, v', msg)\n", GetPredicateName()) +
             "  {\n" +
-            "    VariableNextProperties(c, v, v');\n" + 
-            "    if msg !in v.network.sentMsgs {\n" + 
+            "    VariableNextProperties(c, v, v');\n" +
+            "    if msg !in v.network.sentMsgs {\n" +
             "      // witness and trigger\n" +
             "      var i := |v.history|-1;\n" +
             "      var dsStep :| NextStep(c, v.Last(), v'.Last(), v.network, v'.network, dsStep);\n" +
             "      var inMsg := dsStep.msgOps.recv.value;\n" +
-            string.Format("      assert {0}.{1}(c.{2}[msg.Src()], v'.History(i).{2}[msg.Src()], v'.History(i+1).{2}[msg.Src()], inMsg, msg);\n", module, functionName, variableField) +
+            string.Format("      var step :| {0}.{1}(c.{2}[msg.Src()], v'.History(i).{2}[msg.Src()], v'.History(i+1).{2}[msg.Src()], step, inMsg, msg{3});\n", module, functionName, variableField, extraVariables) +
+            string.Format("      assert {0}.{1}(c.{2}[msg.Src()], v'.History(i).{2}[msg.Src()], v'.History(i+1).{2}[msg.Src()], step, inMsg, msg{3});\n", module, functionName, variableField, extraVariables) +
             assertExistingMessageBy +
             "    } else {\n" +
             "      // witness and trigger\n" +
-            string.Format("      var i, inMsg :| v.ValidHistoryIdxStrict(i) && ExistingMessage(v, inMsg) && {0}.{1}(c.{2}[msg.Src()], v.History(i).{2}[msg.Src()], v.History(i+1).{2}[msg.Src()], inMsg, msg);\n", module, functionName, variableField) +
+            string.Format("      var i, step, inMsg{3} :| v.ValidHistoryIdxStrict(i) && ExistingMessage(v, inMsg) && {0}.{1}(c.{2}[msg.Src()], v.History(i).{2}[msg.Src()], v.History(i+1).{2}[msg.Src()], step, inMsg, msg{3});\n", module, functionName, variableField, extraVariables) +
             assertExistingMessageBy +
             "    }\n" +
             "  }\n" +
@@ -195,15 +206,17 @@ namespace Microsoft.Dafny
       "{\n" +
       string.Format("  forall msg | msg in v'.network.sentMsgs && msg.{0}?\n", msgType) +
       "  ensures\n" +
-      "  (exists i ::\n" + 
+      $"  (exists i, step{extraVariables} ::\n" +
       "    && v'.ValidHistoryIdxStrict(i)\n" +
-      string.Format("    && {0}.{1}(c.{2}[msg.Src()], v'.History(i).{2}[msg.Src()], v'.History(i+1).{2}[msg.Src()], msg)\n", module, functionName, variableField) +
+      string.Format("    && {0}.{1}(c.{2}[msg.Src()], v'.History(i).{2}[msg.Src()], v'.History(i+1).{2}[msg.Src()], step, msg{3})\n", module, functionName, variableField, extraVariables) +
       "  ) {\n" +
-      "    VariableNextProperties(c, v, v');\n" + 
-      "    if msg !in v.network.sentMsgs {\n" + 
+      "    VariableNextProperties(c, v, v');\n" +
+      "    if msg !in v.network.sentMsgs {\n" +
       "      // witness and trigger\n" +
       "      var i := |v.history|-1;\n" +
-      string.Format("      assert {0}.{1}(c.{2}[msg.Src()], v'.History(i).{2}[msg.Src()], v'.History(i+1).{2}[msg.Src()], msg);\n", module, functionName, variableField) +
+      // might need to have extraVariables.Length > 0 ? extraVariables.Substring(2) : "" for var step{3}. but not for msg{3}
+      string.Format("      var step{3} :| {0}.{1}(c.{2}[msg.Src()], v'.History(i).{2}[msg.Src()], v'.History(i+1).{2}[msg.Src()], step, msg{3});\n", module, functionName, variableField, extraVariables) +
+      string.Format("      assert {0}.{1}(c.{2}[msg.Src()], v'.History(i).{2}[msg.Src()], v'.History(i+1).{2}[msg.Src()], step, msg{3});\n", module, functionName, variableField, extraVariables) +
       "    }\n" +
       "  }\n" +
       "}\n";
@@ -211,8 +224,8 @@ namespace Microsoft.Dafny
     }
 
     public override string ToString(){
-      return string.Format("Send predicate [{0}] in module [{1}] for msg type [{2}], in DistributedSystem.[Hosts.{3}]. IsRecvAndSend: [{4}]", functionName, module, msgType, variableField, isRecvAndSend);
-    }  
+      return string.Format("Send predicate [{0}] in module [{1}] for msg type [{2}], in DistributedSystem.[Hosts.{3}]. IsRecvAndSend: [{4}]. Extra variables: [{5}]", functionName, module, msgType, variableField, isRecvAndSend, extraVariables);
+    }
 
     public string ToSkolemization() {
       if (isRecvAndSend) {
@@ -223,13 +236,13 @@ namespace Microsoft.Dafny
     }
 
     private string toSkolemizationRecvSend() {
-      var assertExistingMessageBy = 
+      var assertExistingMessageBy =
             "  assert inMsg in v.network.sentMsgs by {\n" +
             "    reveal_ExistingMessage();\n" +
             "  }\n";
 
       var res = string.Format("lemma {0}(c: Constants, v: Variables, msg: Message)\n", GetSkolemizationName()) +
-            "returns (i: nat, inMsg: Message)\n" +
+            $"returns (i: nat, step: {module}.Step, inMsg: Message{extraVariablesType})\n" +
             "  requires v.WF(c)\n" +
             "  requires ValidMessages(c, v)\n" +
             string.Format("  requires {0}(c, v)\n", GetPredicateName()) +
@@ -237,12 +250,12 @@ namespace Microsoft.Dafny
             string.Format("  requires msg.{0}?\n", msgType) +
             "  ensures v.ValidHistoryIdxStrict(i)\n" +
             "  ensures inMsg in v.network.sentMsgs\n" +
-            string.Format("  ensures {0}.{1}(c.{2}[msg.Src()], v.History(i).{2}[msg.Src()], v.History(i+1).{2}[msg.Src()], inMsg, msg)\n", module, functionName, variableField) +
+            string.Format("  ensures {0}.{1}(c.{2}[msg.Src()], v.History(i).{2}[msg.Src()], v.History(i+1).{2}[msg.Src()], step, inMsg, msg{3})\n", module, functionName, variableField, extraVariables) +
             "{\n" +
-            "  i, inMsg :|\n" +
+            $"  i, step, inMsg{extraVariables} :|\n" +
             "      && v.ValidHistoryIdxStrict(i)\n" +
             "      && ExistingMessage(v, inMsg)\n" +
-            string.Format("      && {0}.{1}(c.{2}[msg.Src()], v.History(i).{2}[msg.Src()], v.History(i+1).{2}[msg.Src()], inMsg, msg);\n", module, functionName, variableField) +
+            string.Format("      && {0}.{1}(c.{2}[msg.Src()], v.History(i).{2}[msg.Src()], v.History(i+1).{2}[msg.Src()], step, inMsg, msg{3});\n", module, functionName, variableField, extraVariables) +
             assertExistingMessageBy +
             "}\n";
       return res;
@@ -250,18 +263,18 @@ namespace Microsoft.Dafny
 
     private string toSkolemizationCommon() {
       var res = string.Format("lemma {0}(c: Constants, v: Variables, msg: Message)\n", GetSkolemizationName()) +
-            "returns (i: nat)\n" +
+            $"returns (i: nat, step: {module}.Step{extraVariablesType})\n" +
             "  requires v.WF(c)\n" +
             "  requires ValidMessages(c, v)\n" +
             string.Format("  requires {0}(c, v)\n", GetPredicateName()) +
             "  requires msg in v.network.sentMsgs\n" +
             string.Format("  requires msg.{0}?\n", msgType) +
             "  ensures v.ValidHistoryIdxStrict(i)\n" +
-            string.Format("  ensures {0}.{1}(c.{2}[msg.Src()], v.History(i).{2}[msg.Src()], v.History(i+1).{2}[msg.Src()], msg)\n", module, functionName, variableField) +
+            string.Format("  ensures {0}.{1}(c.{2}[msg.Src()], v.History(i).{2}[msg.Src()], v.History(i+1).{2}[msg.Src()], step, msg{3})\n", module, functionName, variableField, extraVariables) +
             "{\n" +
-            "  i :|\n" +
+            $"  i, step{extraVariables} :|\n" +
             "      && v.ValidHistoryIdxStrict(i)\n" +
-            string.Format("      && {0}.{1}(c.{2}[msg.Src()], v.History(i).{2}[msg.Src()], v.History(i+1).{2}[msg.Src()], msg);\n", module, functionName, variableField) +
+            string.Format("      && {0}.{1}(c.{2}[msg.Src()], v.History(i).{2}[msg.Src()], v.History(i+1).{2}[msg.Src()], step, msg{3});\n", module, functionName, variableField, extraVariables) +
             "}\n";
       return res;
     }
