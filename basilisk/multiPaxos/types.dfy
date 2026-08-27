@@ -59,7 +59,7 @@ datatype MonotonicVBOptionSeq = MVBSeq(vbOptSeq: seq<Option<ValBal>>)
     this.vbOptSeq[slot]
   }
 
-  function updateSlot(slot: int, item: Option<ValBal>) : MonotonicVBOptionSeq 
+  function updateSlot(slot: int, item: Option<ValBal>) : MonotonicVBOptionSeq
     requires 0 <= slot < |vbOptSeq|
   {
     MVBSeq(vbOptSeq[slot := item])
@@ -89,8 +89,8 @@ datatype MonotonicReceivedAcceptsSeq = RASeq(mapSeq: seq<map<ValBal, NonemptyHos
 
   ghost predicate SatisfiesMonotonic(past: MonotonicReceivedAcceptsSeq) {
     && |past.mapSeq| == |this.mapSeq|
-    && (forall slot, vb | 0 <= slot < |this.mapSeq| && vb in past.getSlot(slot) 
-        :: 
+    && (forall slot, vb | 0 <= slot < |this.mapSeq| && vb in past.getSlot(slot)
+        ::
         && vb in this.getSlot(slot)
         && past.getSlot(slot)[vb] <= this.getSlot(slot)[vb]
         && |past.getSlot(slot)[vb]| <= |this.getSlot(slot)[vb]|
@@ -101,9 +101,9 @@ datatype MonotonicReceivedAcceptsSeq = RASeq(mapSeq: seq<map<ValBal, NonemptyHos
 datatype HighestHeard = HH(ob: Option<Ballot>, v: Value)
 
 datatype MonotonicLeaderState = LS(
-    currBal: Ballot, 
-    promises: set<HostId>, 
-    logHighestHeardValues: seq<HighestHeard>, 
+    currBal: Ballot,
+    promises: set<HostId>,
+    logHighestHeardValues: seq<HighestHeard>,
     f: nat
 ) {
   ghost predicate SatisfiesMonotonic(past: MonotonicLeaderState) {
@@ -124,7 +124,7 @@ datatype MonotonicLeaderState = LS(
     && past.currBal == currBal ==>
         && (forall slot | 0 <= slot < |logHighestHeardValues| && |past.promises| >= f+1
                 :: this.logHighestHeardValues[slot] == past.logHighestHeardValues[slot])
-        && (forall slot | 0 <= slot < |logHighestHeardValues| && past.logHighestHeardValues[slot].ob.Some? 
+        && (forall slot | 0 <= slot < |logHighestHeardValues| && past.logHighestHeardValues[slot].ob.Some?
                 :: this.logHighestHeardValues[slot].ob.Some? && BalLteq(past.logHighestHeardValues[slot].ob.value, this.logHighestHeardValues[slot].ob.value))
   }
 }

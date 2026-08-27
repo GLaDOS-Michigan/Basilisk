@@ -25,7 +25,7 @@ ghost predicate ServerOwnsLockImpliesNoClientsOwnsLock(c: Constants, v: Variable
     v.History(i).server[0].hasLock ==>
       forall id: int
  {:trigger v.History(i).clients[id]} {:trigger c.ValidClientIdx(id), v.ValidHistoryIdx(i)}
- | c.ValidClientIdx(id) :: 
+ | c.ValidClientIdx(id) ::
         !v.History(i).clients[id].hasLock
   )
 }

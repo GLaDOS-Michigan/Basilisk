@@ -18,16 +18,16 @@ module MessageInvariants {
 
   // For each host, if its highestHeard is >-1, then it must have gotten it from a message
   // from its predecessor
-  ghost predicate ReceiveValidity(c: Constants, v: Variables) 
+  ghost predicate ReceiveValidity(c: Constants, v: Variables)
     requires v.WF(c)
     requires VoteMsgValidSrc(c, v)
   {
-    forall idx | 
-      && 0 <= idx < |c.hostConstants| 
+    forall idx |
+      && 0 <= idx < |c.hostConstants|
       && v.hosts[idx].highestHeard > -1
-    :: 
-      (exists msg :: && msg in v.network.sentMsgs 
-                    && msg.val == v.hosts[idx].highestHeard 
+    ::
+      (exists msg :: && msg in v.network.sentMsgs
+                    && msg.val == v.hosts[idx].highestHeard
                     && idx == Successor(|c.hostConstants|, msg.src))
   }
 

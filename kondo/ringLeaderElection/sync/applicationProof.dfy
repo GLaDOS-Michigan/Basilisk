@@ -5,7 +5,7 @@ import opened Types
 import opened UtilitiesLibrary
 import opened System
 import opened Obligations
-  
+
 
 /***************************************************************************************
 *                                Application Invariants                                *
@@ -54,7 +54,7 @@ lemma InvInductive(c: Constants, v: Variables, v': Variables)
 
 // BEGIN SAFETY PROOF
 
-ghost predicate Between(start: nat, node: nat, end: nat) 
+ghost predicate Between(start: nat, node: nat, end: nat)
 {
   if start < end then
     start < node < end else
@@ -65,20 +65,20 @@ function Distance(n: nat, start: nat, end: nat) : nat
   requires 0 <= start < n
   requires 0 <= end < n
 {
-  if start <= end then end - start 
+  if start <= end then end - start
   else n - start + end
 }
 
-ghost predicate ChordDominates(c: Constants, v: Variables) 
+ghost predicate ChordDominates(c: Constants, v: Variables)
   requires v.WF(c)
 {
-  forall src:nat, dst:nat, mid:nat | 
+  forall src:nat, dst:nat, mid:nat |
       && c.ValidIdx(src)
       && c.ValidIdx(dst)
       && c.ValidIdx(mid)
       && v.hosts[dst].highestHeard == c.hosts[src].hostId
       && Between(src, mid, dst)
-    :: 
+    ::
       c.hosts[mid].hostId < c.hosts[src].hostId
 }
 

@@ -8,7 +8,7 @@ module Obligations {
   ghost predicate Safety(c: Constants, v: Variables)
     requires v.WF(c)
   {
-    forall l1, l2 
+    forall l1, l2
     |
       && c.ValidHostIdx(l1)
       && c.ValidHostIdx(l2)

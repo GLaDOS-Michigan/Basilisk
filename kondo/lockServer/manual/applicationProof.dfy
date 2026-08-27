@@ -11,13 +11,13 @@ module LockServerProof {
 *                                   Definitions                                        *
 ***************************************************************************************/
 
-  ghost predicate LockInFlight(c: Constants, v: Variables) 
+  ghost predicate LockInFlight(c: Constants, v: Variables)
     requires v.WF(c)
   {
     exists msg :: LockInFlightByMessage(c, v, msg)
   }
 
-  ghost predicate LockInFlightByMessage(c: Constants, v: Variables, msg: Message) 
+  ghost predicate LockInFlightByMessage(c: Constants, v: Variables, msg: Message)
     requires v.WF(c)
   {
     && msg in v.network.sentMsgs
@@ -30,24 +30,24 @@ module LockServerProof {
     )
   }
 
-  ghost predicate NoClientOwnsLock(c: Constants, v: Variables) 
+  ghost predicate NoClientOwnsLock(c: Constants, v: Variables)
     requires v.WF(c)
   {
-    forall idx | 0 <= idx < |c.clients| 
-    :: 
+    forall idx | 0 <= idx < |c.clients|
+    ::
     !v.clients[idx].hasLock
   }
 
-  ghost predicate NoServerOwnsLock(c: Constants, v: Variables) 
+  ghost predicate NoServerOwnsLock(c: Constants, v: Variables)
     requires v.WF(c)
   {
     forall idx | 0 <= idx < |c.server|
-    :: 
+    ::
 
     !v.server[idx].hasLock
   }
 
-  ghost predicate NoHostOwnsLock(c: Constants, v: Variables) 
+  ghost predicate NoHostOwnsLock(c: Constants, v: Variables)
     requires v.WF(c)
   {
     && NoClientOwnsLock(c, v)
@@ -75,7 +75,7 @@ module LockServerProof {
   ghost predicate AtMostOneLockHolderClients(c: Constants, v: Variables)
     requires v.WF(c)
   {
-    forall h1, h2| 
+    forall h1, h2|
       && 0 <= h1 < |c.clients|
       && 0 <= h2 < |c.clients|
       && v.clients[h1].hasLock
@@ -87,7 +87,7 @@ module LockServerProof {
   ghost predicate AtMostOneLockHolderServers(c: Constants, v: Variables)
     requires v.WF(c)
   {
-    forall h1, h2 | 
+    forall h1, h2 |
       && 0 <= h1 < |c.server|
       && 0 <= h2 < |c.server|
       && v.server[h1].hasLock
@@ -101,7 +101,7 @@ module LockServerProof {
   {
     v.server[0].hasLock ==> NoClientOwnsLock(c, v)
   }
-  
+
   // Protocol bundle: 5 clauses in total
   ghost predicate ProtocolInv(c: Constants, v: Variables)
     requires v.WF(c)
@@ -164,7 +164,7 @@ lemma InvNextAtMostOneInFlightMessage(c: Constants, v: Variables, v': Variables)
   requires Next(c, v, v')
   ensures AtMostOneInFlightMessage(c, v')
 {
-  forall m1, m2 | LockInFlightByMessage(c, v', m1) && LockInFlightByMessage(c, v', m2) 
+  forall m1, m2 | LockInFlightByMessage(c, v', m1) && LockInFlightByMessage(c, v', m2)
   ensures m1 == m2
   {
     if m1 != m2 {
@@ -198,13 +198,13 @@ lemma InvNextHostOwnsLockImpliesNotInFlight(c: Constants, v: Variables, v': Vari
   }
 }
 
-lemma InvNextAtMostOneLockHolderClients(c: Constants, v: Variables, v': Variables) 
+lemma InvNextAtMostOneLockHolderClients(c: Constants, v: Variables, v': Variables)
   requires v'.WF(c)
   requires Inv(c, v)
   requires Next(c, v, v')
   ensures AtMostOneLockHolderClients(c, v')
 {
-  forall h1, h2 | 
+  forall h1, h2 |
       && 0 <= h1 < |c.clients|
       && 0 <= h2 < |c.clients|
       && v'.clients[h1].hasLock
@@ -215,24 +215,24 @@ lemma InvNextAtMostOneLockHolderClients(c: Constants, v: Variables, v': Variable
     var dsStep :| NextStep(c, v, v', dsStep);
     if h1 != h2 {
       if v'.clients[h2].hasLock {
-        assert LockInFlightByMessage(c, v, dsStep.msgOps.recv.value);  
+        assert LockInFlightByMessage(c, v, dsStep.msgOps.recv.value);
         assert false;
       }
       if v'.clients[h1].hasLock {
-        assert LockInFlightByMessage(c, v, dsStep.msgOps.recv.value);  
+        assert LockInFlightByMessage(c, v, dsStep.msgOps.recv.value);
         assert false;
       }
-    } 
+    }
   }
 }
 
-lemma InvNextAtMostOneLockHolderServers(c: Constants, v: Variables, v': Variables) 
+lemma InvNextAtMostOneLockHolderServers(c: Constants, v: Variables, v': Variables)
   requires v'.WF(c)
   requires Inv(c, v)
   requires Next(c, v, v')
   ensures AtMostOneLockHolderServers(c, v')
 {
-  forall h1, h2 | 
+  forall h1, h2 |
       && 0 <= h1 < |c.server|
       && 0 <= h2 < |c.server|
       && v'.server[h1].hasLock
@@ -243,18 +243,18 @@ lemma InvNextAtMostOneLockHolderServers(c: Constants, v: Variables, v': Variable
     var dsStep :| NextStep(c, v, v', dsStep);
     if h1 != h2 {
       if v'.server[h2].hasLock {
-        assert LockInFlightByMessage(c, v, dsStep.msgOps.recv.value);  
+        assert LockInFlightByMessage(c, v, dsStep.msgOps.recv.value);
         assert false;
       }
       if v'.server[h1].hasLock {
-        assert LockInFlightByMessage(c, v, dsStep.msgOps.recv.value);  
+        assert LockInFlightByMessage(c, v, dsStep.msgOps.recv.value);
         assert false;
       }
     }
   }
 }
 
-lemma InvNextServerOwnsLockImpliesNoClientsOwnsLock(c: Constants, v: Variables, v': Variables) 
+lemma InvNextServerOwnsLockImpliesNoClientsOwnsLock(c: Constants, v: Variables, v': Variables)
   requires v'.WF(c)
   requires Inv(c, v)
   requires Next(c, v, v')
@@ -271,7 +271,7 @@ lemma InvNextServerOwnsLockImpliesNoClientsOwnsLock(c: Constants, v: Variables, 
       }
     } else {
       assert LockInFlightByMessage(c, v, dsStep.msgOps.recv.value);
-    }    
+    }
   }
 }
 

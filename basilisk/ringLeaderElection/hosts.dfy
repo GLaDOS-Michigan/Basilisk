@@ -75,7 +75,7 @@ module Host {
   }
 
   // Receive msg trigger
-  // First 2 arguments are mandatory. Second argument identifies target host. 
+  // First 2 arguments are mandatory. Second argument identifies target host.
   ghost predicate ReceiveMsgTrigger(c: Constants, v: Variables, hh: nat) {
     && v.highestHeard == hh
   }

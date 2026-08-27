@@ -19,7 +19,7 @@ module MonotonicityLibrary {
 
   datatype MonotonicSet<T> = MonotonicSet(s: set<T>)
   {
-    ghost predicate SatisfiesMonotonic(past: MonotonicSet<T>) 
+    ghost predicate SatisfiesMonotonic(past: MonotonicSet<T>)
     {
       && past.s <= this.s
     }
@@ -35,7 +35,7 @@ module MonotonicityLibrary {
     ghost function Contains(e: T) : bool {
       e in s
     }
-    
+
     ghost function IsSubsetOf(other: set<T>) : bool {
       s <= other
     }
@@ -45,15 +45,15 @@ module MonotonicityLibrary {
     }
   }
 
-  lemma MonotonicSetContainmentLemma<T>(ms: MonotonicSet<T>, s: set<T> ) 
+  lemma MonotonicSetContainmentLemma<T>(ms: MonotonicSet<T>, s: set<T> )
     requires forall x | ms.Contains(x) :: x in s
     ensures ms.IsSubsetOf(s)
   {}
- 
+
   datatype MonotonicSeq<T> = MonotonicSeq(s: seq<T>)
   {
     ghost predicate SatisfiesMonotonic(past: MonotonicSeq<T>) {
-      && |past.s| <= |s| 
+      && |past.s| <= |s|
       && (forall i | 0 <= i < |past.s| :: past.s[i] == s[i])
     }
   }

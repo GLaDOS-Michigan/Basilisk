@@ -61,21 +61,21 @@ module DistributedSystem {
     history: seq<Hosts>,
     network: Network.Variables
   ) {
-  
+
     ghost predicate ValidHistoryIdx(i: int) {
       0 <= i < |history|
     }
-  
+
     ghost predicate ValidHistoryIdxStrict(i: int) {
       0 <= i < |history|-1
     }
-  
+
     ghost predicate WF(c: Constants) {
       && c.WF()
       && 0 < |history|
       && (forall i | ValidHistoryIdx(i) :: history[i].WF(c))
     }
-  
+
     ghost function Last() : (h: Hosts)
       requires 0 < |history|
       ensures h == history[|history|-1]
@@ -83,7 +83,7 @@ module DistributedSystem {
    {
       UtilitiesLibrary.Last(history)
     }
-  
+
     ghost function History(i: int) : (h: Hosts)
       requires ValidHistoryIdx(i)
       ensures h == history[i]
@@ -107,7 +107,7 @@ module DistributedSystem {
     && Network.Init(v.network)
   }
 
-  datatype Step = 
+  datatype Step =
     | HostStep(actor: nat, msgOps: MessageOps)
 
   ghost predicate NextStep(c: Constants, h: Hosts, h': Hosts, n: Network.Variables, n': Network.Variables, step: Step)

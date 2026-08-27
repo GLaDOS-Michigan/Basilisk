@@ -22,7 +22,7 @@ module System {
       && Host.GroupWF(c.hosts, hosts)
     }
 
-    ghost predicate IsLeader(c: Constants, h: HostId) 
+    ghost predicate IsLeader(c: Constants, h: HostId)
       requires WF(c)
       requires c.ValidHostId(h)
     {
@@ -42,8 +42,8 @@ module System {
     | VoteStep(voter: HostId, nominee: HostId, transmit: Transmit)
     | StutterStep()
 
-  
-  ghost predicate NextHostLocalStep(c: Constants, v: Variables, v': Variables, host: HostId) 
+
+  ghost predicate NextHostLocalStep(c: Constants, v: Variables, v': Variables, host: HostId)
     requires v.WF(c) && v'.WF(c)
   {
     // No transmission in this step

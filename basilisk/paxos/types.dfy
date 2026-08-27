@@ -12,7 +12,7 @@ datatype ValBal = VB(v:Value, b:LeaderId)
 datatype Message = Prepare(bal:LeaderId)
                 | Promise(bal:LeaderId, acc:AcceptorId, vbOpt:Option<ValBal>)  //valbal is the value-ballot pair with which the value was accepted
                 | Propose(bal:LeaderId, val:Value)
-                | Accept(vb:ValBal, acc:AcceptorId)                 
+                | Accept(vb:ValBal, acc:AcceptorId)
 {
   ghost function Src() : nat {
     if this.Prepare? then bal
@@ -39,12 +39,12 @@ datatype MonotonicVBOption = MVBSome(value: ValBal) | MVBNone
   }
 }
 
-datatype MonotonicReceivedAcceptsMap = RA(m: map<ValBal, set<AcceptorId>>) 
+datatype MonotonicReceivedAcceptsMap = RA(m: map<ValBal, set<AcceptorId>>)
 {
   ghost predicate SatisfiesMonotonic(past: MonotonicReceivedAcceptsMap) {
-    forall vb | 
-    && vb in past.m 
-    :: 
+    forall vb |
+    && vb in past.m
+    ::
       && 0 < |past.m[vb]|
       && vb in this.m
       && past.m[vb] <= this.m[vb]
@@ -52,7 +52,7 @@ datatype MonotonicReceivedAcceptsMap = RA(m: map<ValBal, set<AcceptorId>>)
   }
 }
 
-datatype MonotonicPromisesAndValue = PV(promises: set<AcceptorId>, value: Value, f: nat) 
+datatype MonotonicPromisesAndValue = PV(promises: set<AcceptorId>, value: Value, f: nat)
 {
   ghost predicate SatisfiesMonotonic(past: MonotonicPromisesAndValue) {
     && past.promises <= this.promises

@@ -18,7 +18,7 @@ datatype Constants = Constants(
     && 0 < f
     && UniqueIds()
   }
-  
+
   ghost predicate UniqueIds() {
     && UniqueLeaderIds()
     && UniqueAcceptorIds()
@@ -36,7 +36,7 @@ datatype Constants = Constants(
   ghost predicate ValidLearnerIdx(id: int) {
     0 <= id < |learners|
   }
-  
+
   ghost predicate UniqueLeaderIds() {
     forall i, j | ValidLeaderIdx(i) && ValidLeaderIdx(j) && leaders[i].id == leaders[j].id :: i == j
   }
@@ -63,7 +63,7 @@ datatype Variables = Variables(
     && LearnerHost.GroupWF(c.learners, learners, c.f)
   }
 
-  ghost predicate LeaderCanPropose(c: Constants, ldr: LeaderId) 
+  ghost predicate LeaderCanPropose(c: Constants, ldr: LeaderId)
     requires WF(c)
     requires c.ValidLeaderIdx(ldr)
   {
@@ -81,7 +81,7 @@ ghost predicate Init(c: Constants, v: Variables) {
   && LearnerHost.GroupInit(c.learners, v.learners, c.f)
 }
 
-datatype Step = 
+datatype Step =
   | P1aStep(leader: LeaderId, acceptors: AcceptorId, transmit: Transmit)
   | P1bStep(acceptor: AcceptorId, leader: LeaderId, transmit: Transmit)
   | P2aStep(leader: LeaderId, acceptors: AcceptorId, transmit: Transmit)
@@ -90,8 +90,8 @@ datatype Step =
   | StutterStep()
 
 
-// Leader sends Prepare message to Acceptor. Acceptor buffers it in its pendingPrepare field 
-ghost predicate NextP1aStep(c: Constants, v: Variables, v': Variables, ldr: LeaderId, acc: AcceptorId, transmit: Transmit) 
+// Leader sends Prepare message to Acceptor. Acceptor buffers it in its pendingPrepare field
+ghost predicate NextP1aStep(c: Constants, v: Variables, v': Variables, ldr: LeaderId, acc: AcceptorId, transmit: Transmit)
   requires v.WF(c) && v'.WF(c)
 {
   // Leader action
@@ -108,8 +108,8 @@ ghost predicate NextP1aStep(c: Constants, v: Variables, v': Variables, ldr: Lead
 }
 
 // Acceptor processes its pendingPrepare, and maybe sends a Promise to the leader
-ghost predicate NextP1bStep(c: Constants, v: Variables, v': Variables, 
-    ldr: LeaderId, acc: AcceptorId, transmit: Transmit) 
+ghost predicate NextP1bStep(c: Constants, v: Variables, v': Variables,
+    ldr: LeaderId, acc: AcceptorId, transmit: Transmit)
   requires v.WF(c) && v'.WF(c)
 {
   // Decide whether to send promise
@@ -140,8 +140,8 @@ ghost predicate NextP1bStep(c: Constants, v: Variables, v': Variables,
 }
 
 // Leader sends Proposal to an acceptor. The acceptor processes the proposal
-ghost predicate NextP2aStep(c: Constants, v: Variables, v': Variables, 
-    ldr: LeaderId, acc: AcceptorId, transmit: Transmit) 
+ghost predicate NextP2aStep(c: Constants, v: Variables, v': Variables,
+    ldr: LeaderId, acc: AcceptorId, transmit: Transmit)
   requires v.WF(c) && v'.WF(c)
 {
   // Leader action
@@ -158,7 +158,7 @@ ghost predicate NextP2aStep(c: Constants, v: Variables, v': Variables,
 }
 
 // Acceptor sends acceptedVB to some Learner
-ghost predicate NextP2bStep(c: Constants, v: Variables, v': Variables, 
+ghost predicate NextP2bStep(c: Constants, v: Variables, v': Variables,
     acc: AcceptorId, lnr: LearnerId, transmit: Transmit)
   requires v.WF(c) && v'.WF(c)
 {

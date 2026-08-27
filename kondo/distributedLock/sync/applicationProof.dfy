@@ -1,7 +1,7 @@
 include "spec.dfy"
 
 module ToylockProof {
-  
+
 import opened Types
 import opened UtilitiesLibrary
 import opened System

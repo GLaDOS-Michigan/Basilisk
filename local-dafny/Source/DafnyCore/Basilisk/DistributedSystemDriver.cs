@@ -55,7 +55,7 @@ public class GenAsyncDriver {
     }
     Debug.Assert(res != null, String.Format("Module {0} not found ", moduleName));
     return res;
-  } 
+  }
 
   public void WriteToFile() {
     string dsString = DistributedSystemPrinter.PrintDistributedSystem(dsFile, options, program.FullName);

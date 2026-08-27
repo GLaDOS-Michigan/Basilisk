@@ -196,7 +196,7 @@ returns (j: nat, step: CoordinatorHost.Step, msgOps: MessageOps)
   requires v.ValidHistoryIdx(i)
   requires v.History(i).coordinator[idx] != v.History(0).coordinator[idx]
   ensures v.ValidHistoryIdxStrict(j)
-  ensures 0 <= j < i 
+  ensures 0 <= j < i
   ensures v.History(j).coordinator[idx] != v.History(j+1).coordinator[idx]
   ensures v.History(j+1).coordinator[idx] == v.History(i).coordinator[idx]
   ensures CoordinatorHost.NextStep(c.coordinator[idx], v.History(j).coordinator[idx], v.History(j+1).coordinator[idx], step, msgOps)
@@ -266,7 +266,7 @@ returns (j: nat, step: ParticipantHost.Step, msgOps: MessageOps)
   requires v.ValidHistoryIdx(i)
   requires v.History(i).participants[idx] != v.History(0).participants[idx]
   ensures v.ValidHistoryIdxStrict(j)
-  ensures 0 <= j < i 
+  ensures 0 <= j < i
   ensures v.History(j).participants[idx] != v.History(j+1).participants[idx]
   ensures v.History(j+1).participants[idx] == v.History(i).participants[idx]
   ensures ParticipantHost.NextStep(c.participants[idx], v.History(j).participants[idx], v.History(j+1).participants[idx], step, msgOps)

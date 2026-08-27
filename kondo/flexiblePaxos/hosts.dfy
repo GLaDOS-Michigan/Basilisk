@@ -30,7 +30,7 @@ module LeaderHost {
     ghost predicate HeardAtLeast(b: LeaderId) {
       highestHeardBallot.MNSome? && highestHeardBallot.value >= b
     }
-    
+
     // My highestHeardBallot < b
     ghost predicate HeardAtMost(b: LeaderId) {
       highestHeardBallot.MNNone? || highestHeardBallot.value < b
@@ -67,7 +67,7 @@ module LeaderHost {
     && (forall i | 0 <= i < |grp_c| :: grp_v[i].WF(grp_c[i]))
   }
 
-  ghost predicate GroupInit(grp_c: seq<Constants>, grp_v: seq<Variables>, p1Quorum: nat) 
+  ghost predicate GroupInit(grp_c: seq<Constants>, grp_v: seq<Variables>, p1Quorum: nat)
     requires GroupWF(grp_c, grp_v, p1Quorum)
   {
     forall i | 0 <= i < |grp_c| :: Init(grp_c[i], grp_v[i])
@@ -123,8 +123,8 @@ module LeaderHost {
     // on its proposed value after receiving extraneous straggling promises.
     && |v.ReceivedPromises()| < c.p1Quorum
     && acc !in v.ReceivedPromises()
-    && var doUpdate := 
-          && vbOpt.Some? 
+    && var doUpdate :=
+          && vbOpt.Some?
           && v.HeardAtMost(vbOpt.value.b);
     v' == v.(
               receivedPromisesAndValue := PV(v.receivedPromisesAndValue.promises + {acc}, if doUpdate then vbOpt.value.v else v.receivedPromisesAndValue.value, c.p1Quorum),
@@ -133,7 +133,7 @@ module LeaderHost {
   }
 
   // Receive predicate trigger
-  // First 2 arguments are mandatory. Second argument identifies target host. 
+  // First 2 arguments are mandatory. Second argument identifies target host.
   ghost predicate ReceivePromiseTrigger(c: Constants, v: Variables, acc: AcceptorId) {
     && acc in v.ReceivedPromises()
   }
@@ -236,7 +236,7 @@ module AcceptorHost {
     && (forall i | 0 <= i < |grp_c| :: grp_v[i].WF())
   }
 
-  ghost predicate GroupInit(grp_c: seq<Constants>, grp_v: seq<Variables>, n: nat) 
+  ghost predicate GroupInit(grp_c: seq<Constants>, grp_v: seq<Variables>, n: nat)
     requires GroupWF(grp_c, grp_v, n)
   {
     forall i | 0 <= i < |grp_c| :: Init(grp_c[i], grp_v[i])
@@ -249,10 +249,10 @@ module AcceptorHost {
   }
 
   datatype Step =
-    ReceivePrepareStep() 
-    | MaybePromiseStep() 
-    | MaybeAcceptStep() 
-    | BroadcastAcceptedStep() 
+    ReceivePrepareStep()
+    | MaybePromiseStep()
+    | MaybeAcceptStep()
+    | BroadcastAcceptedStep()
     | StutterStep()
 
   ghost predicate NextStep(c: Constants, v: Variables, v': Variables, step: Step, msgOps: MessageOps)
@@ -313,7 +313,7 @@ module AcceptorHost {
     && var doAccept := (v.promised.MNSome? ==> v.promised.value <= bal);
     &&  if doAccept then
           && v' == v.(
-                promised := MNSome(bal), 
+                promised := MNSome(bal),
                 acceptedVB := MVBSome(VB(val, bal)))
         else
           && v' == v
@@ -348,7 +348,7 @@ module AcceptorHost {
     exists step :: NextStep(c, v, v', step, msgOps)
   }
 
-  lemma UpdateReceiveAcceptedStep(c: Constants, v: Variables, v': Variables, 
+  lemma UpdateReceiveAcceptedStep(c: Constants, v: Variables, v': Variables,
     step: Step, msgOps: MessageOps)
     requires NextStep(c, v, v', step, msgOps)
     requires !step.MaybeAcceptStep?
@@ -377,7 +377,7 @@ module LearnerHost {
     receivedAccepts: MonotonicReceivedAccepts,
     learned: Option<Value>
   ) {
-    
+
     ghost predicate HasLearnedValue(v: Value) {
       learned == Some(v)
     }
@@ -395,7 +395,7 @@ module LearnerHost {
     && |grp_v| == |grp_c|
   }
 
-  ghost predicate GroupInit(grp_c: seq<Constants>, grp_v: seq<Variables>, p2Quorum: nat) 
+  ghost predicate GroupInit(grp_c: seq<Constants>, grp_v: seq<Variables>, p2Quorum: nat)
     requires GroupWF(grp_c, grp_v, p2Quorum)
   {
     forall i | 0 <= i < |grp_c| :: Init(grp_c[i], grp_v[i])
@@ -417,17 +417,17 @@ module LearnerHost {
       case StutterStep => NextStutterStep(c, v, v', msgOps)
   }
 
-  function UpdateReceivedAccepts(receivedAccepts: MonotonicReceivedAccepts, 
+  function UpdateReceivedAccepts(receivedAccepts: MonotonicReceivedAccepts,
     vb: ValBal, acc: AcceptorId) : (out: MonotonicReceivedAccepts)
-    // Tony: ensures clauses are exactly how I can prove to the user, and tell dafny, that 
+    // Tony: ensures clauses are exactly how I can prove to the user, and tell dafny, that
     // data structures annotated as monotonic actually are monotonic --- cool!
     ensures vb in receivedAccepts.m ==> vb in out.m
     ensures vb in receivedAccepts.m ==> |receivedAccepts.m[vb]| <= |out.m[vb]|
   {
-    if vb in receivedAccepts.m then 
+    if vb in receivedAccepts.m then
       UnionIncreasesCardinality(receivedAccepts.m[vb], {acc});
       RA(receivedAccepts.m[vb := receivedAccepts.m[vb] + {acc}])
-    else 
+    else
       RA(receivedAccepts.m[vb := {acc}])
   }
 
@@ -446,7 +446,7 @@ module LearnerHost {
   }
 
   // Receive predicate trigger
-  // First 2 arguments are mandatory. Second argument identifies target host. 
+  // First 2 arguments are mandatory. Second argument identifies target host.
   ghost predicate ReceiveAcceptTrigger(c: Constants, v: Variables, acc: AcceptorId, vb: ValBal) {
     && vb in v.receivedAccepts.m
     && acc in v.receivedAccepts.m[vb]

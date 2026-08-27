@@ -47,17 +47,17 @@ ghost predicate Transmission(c: Constants, v: Variables, v': Variables, actor: n
   && var succ := Successor(|c.hosts|, actor);
   && Host.Next(c.hosts[succ], v.hosts[succ], v'.hosts[succ], transmit.Recv())     // step receiver
   // All others unchanged
-  && forall idx:nat | 
-      && c.ValidIdx(idx) 
+  && forall idx:nat |
+      && c.ValidIdx(idx)
       && idx != actor
       && idx != succ
-      :: 
+      ::
       v'.hosts[idx] == v.hosts[idx]
 }
 
 datatype Step = TransmissionStep(actor: nat, transmit: Transmit)
 
-ghost predicate NextStep(c:Constants, v: Variables, v': Variables, step: Step) 
+ghost predicate NextStep(c:Constants, v: Variables, v': Variables, step: Step)
   requires v.WF(c) && v'.WF(c)
 {
   match step {

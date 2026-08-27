@@ -26,12 +26,12 @@ def analyze_protocol(protocol_csv_file):
             # number_of_mono_invariants(protocol)
             auto_host_provs += number_of_host_prov_invariants(protocol)
 
-            
+
             kondo_safety, kondo_total = -1, -1
             if row['in_kondo'] == 'true':
                 # If this is a kondo protocol
                 kondo_safety, kondo_total = kondo_proof_sloc(protocol, int(row['kondo_mods']))
-                
+
             line = f"{protocol},{basilisk_safety},{basilisk_total},{kondo_safety},{kondo_total}"
             res.append(line)
 

@@ -14,7 +14,7 @@ module Host {
       && grp_size > 0
     }
   }
-    
+
   datatype Variables = Variables(
     globalSum: Option<int>,
     sum: Option<int>,
@@ -32,14 +32,14 @@ module Host {
   {
     && (|grp_c| > 0)
     && (|grp_c| == |grp_v|)
-    && (forall idx | 0 <= idx < |grp_c| :: 
+    && (forall idx | 0 <= idx < |grp_c| ::
       && (grp_c[idx].idx == idx && grp_c[idx].grp_size == |grp_c|)
       && (grp_v[idx].WF(grp_c[idx])))
   }
   ghost predicate GroupInit(grp_c: seq<Constants>, grp_v: seq<Variables>)
   {
     && (GroupWF(grp_c, grp_v))
-    && (forall idx | 0 <= idx < |grp_v| :: 
+    && (forall idx | 0 <= idx < |grp_v| ::
       && (grp_v[idx].sum.None?)
       && (forall i:nat | i < |grp_v[idx].peerSums| :: grp_v[idx].peerSums[i].None?)
       && (grp_v[idx].globalSum.None?))

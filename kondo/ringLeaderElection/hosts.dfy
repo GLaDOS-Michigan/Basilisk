@@ -57,7 +57,7 @@ module Host {
       case ReceiveStep => NextReceiveStep(c, v, v', msgOps)
   }
 
-  ghost predicate NextTransmissionStep(c: Constants, v: Variables, v': Variables, msgOps: MessageOps) 
+  ghost predicate NextTransmissionStep(c: Constants, v: Variables, v': Variables, msgOps: MessageOps)
     requires v.WF(c)
   {
     && msgOps.recv.None?
@@ -94,7 +94,7 @@ module Host {
   }
 
   // Receive msg trigger
-  // First 2 arguments are mandatory. Second argument identifies target host. 
+  // First 2 arguments are mandatory. Second argument identifies target host.
   ghost predicate ReceiveMsgTrigger(c: Constants, v: Variables, hh: nat) {
     && hh >= 0
     && v.highestHeard == hh

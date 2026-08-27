@@ -1,7 +1,7 @@
 include "spec.dfy"
 
 module LockServerProof {
-  
+
 import opened Types
 import opened UtilitiesLibrary
 import opened System
@@ -10,7 +10,7 @@ import opened Obligations
 ghost predicate ServerOwnsLockImpliesNoClientsOwnsLock(c: Constants, v: Variables)
   requires v.WF(c)
 {
-  v.server[0].hasLock ==> 
+  v.server[0].hasLock ==>
   (forall id | c.ValidClientIdx(id) :: !v.clients[id].hasLock)
 }
 
@@ -61,7 +61,7 @@ lemma InvInductive(c: Constants, v: Variables, v': Variables)
 lemma InvNextServerOwnsLockImpliesNoClientsOwnsLock(c: Constants, v: Variables, v': Variables)
   requires Inv(c, v)
   requires Next(c, v, v')
-  ensures ServerOwnsLockImpliesNoClientsOwnsLock(c, v') 
+  ensures ServerOwnsLockImpliesNoClientsOwnsLock(c, v')
 {}
 
 // END SAFETY PROOF

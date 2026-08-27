@@ -8,7 +8,7 @@ import opened DistributedSystem
 import opened Obligations
 
 // Every request message in the network has a proper source
-ghost predicate RequestMsgsValidSource(c: Constants, v: Variables) 
+ghost predicate RequestMsgsValidSource(c: Constants, v: Variables)
   requires v.WF(c)
 {
   forall req | req in v.network.sentMsgs && req.RequestMsg?
@@ -44,7 +44,7 @@ ghost predicate ClientResponsesValid(c: Constants, v: Variables)
 }
 
 // Message bundle: 4 clauses in total
-ghost predicate MessageInv(c: Constants, v: Variables) 
+ghost predicate MessageInv(c: Constants, v: Variables)
 {
   && v.WF(c)
   && RequestMsgsValidSource(c, v)

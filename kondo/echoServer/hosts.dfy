@@ -1,8 +1,8 @@
 include "types.dfy"
 
-/* The "client_server_ae protocol sourced from DuoAI (OSDI'22) 
- * Multiple clients can send requests to a server. The server processes each request 
- * and returns a response to the respective client. The server may process the 
+/* The "client_server_ae protocol sourced from DuoAI (OSDI'22)
+ * Multiple clients can send requests to a server. The server processes each request
+ * and returns a response to the respective client. The server may process the
  * requests out-of-order.*/
 
 /***************************************************************************************
@@ -75,7 +75,7 @@ module ServerHost {
   }
 
   // Receive predicate trigger
-  // First 2 arguments are mandatory. Second argument identifies target host. 
+  // First 2 arguments are mandatory. Second argument identifies target host.
   // ghost predicate ReceiveRequestTrigger(c: Constants, v: Variables, req: Request) {
   //   && v.currentRequest == Some(req)
   // }
@@ -153,14 +153,14 @@ module ClientHost {
 
   datatype Step =
       RequestStep()
-    | ReceiveStep() 
+    | ReceiveStep()
     | StutterStep
 
   ghost predicate NextStep(c: Constants, v: Variables, v': Variables, step: Step, msgOps: MessageOps) {
     match step
       case RequestStep() => NextRequestStep(c, v, v', msgOps)
       case ReceiveStep => NextReceiveStep(c, v, v', msgOps)
-      case StutterStep => 
+      case StutterStep =>
           && v == v'
           && msgOps.send == msgOps.recv == None
   }
@@ -196,7 +196,7 @@ module ClientHost {
   }
 
   // Receive response trigger
-  // First 2 arguments are mandatory. Second argument identifies target host. 
+  // First 2 arguments are mandatory. Second argument identifies target host.
   // ghost predicate ReceiveResponseTrigger(c: Constants, v: Variables, reqId: nat) {
   //   && reqId in v.responses
   // }

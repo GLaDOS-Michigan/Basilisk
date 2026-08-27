@@ -20,14 +20,14 @@ ghost predicate ApplicationInv(c: Constants, v: Variables)
   && LeaderTallyReflectsPreferences2(c, v)
 }
 
-ghost predicate LeaderVotesValid1(c: Constants, v: Variables) 
+ghost predicate LeaderVotesValid1(c: Constants, v: Variables)
   requires v.WF(c)
 {
   forall hostId | hostId in v.GetCoordinator(c).yesVotes.s
   :: 0 <= hostId < |c.participants|
 }
 
-ghost predicate LeaderVotesValid2(c: Constants, v: Variables) 
+ghost predicate LeaderVotesValid2(c: Constants, v: Variables)
   requires v.WF(c)
 {
   forall hostId | hostId in v.GetCoordinator(c).noVotes.s
@@ -90,14 +90,14 @@ lemma InvInductive(c: Constants, v: Variables, v': Variables)
 
 // BEGIN SAFETY PROOF
 
-lemma InvNextAC1(c: Constants, v: Variables, v': Variables) 
+lemma InvNextAC1(c: Constants, v: Variables, v': Variables)
   requires Inv(c, v)
   requires Next(c, v, v')
   ensures SafetyAC1(c, v')
 {}
 
 
-lemma InvNextLeaderTallyReflectsPreferences(c: Constants, v: Variables, v': Variables) 
+lemma InvNextLeaderTallyReflectsPreferences(c: Constants, v: Variables, v': Variables)
   requires Inv(c, v)
   requires Next(c, v, v')
   ensures LeaderTallyReflectsPreferences1(c, v')
@@ -110,7 +110,7 @@ lemma InvNextAC3(c: Constants, v: Variables, v': Variables)
   ensures SafetyAC3(c, v')
 {
   forall pidx | c.ValidParticipantId(pidx) && ParticipantDecidedCommit(c, v', pidx)
-  ensures AllPreferYes(c) 
+  ensures AllPreferYes(c)
   {
     if ! AllPreferYes(c) && CoordinatorHasDecided(c, v') {
       var noVoter: HostId :| c.ValidParticipantId(noVoter) && c.participants[noVoter].preference == No;
@@ -148,7 +148,7 @@ lemma YesVotesContainsAllParticipantsWhenFull(c: Constants, v: Variables)
   }
 }
 
-lemma SetLemma(S: set<HostId>, e: HostId, size: int) 
+lemma SetLemma(S: set<HostId>, e: HostId, size: int)
   requires 0 <= e < size
   requires forall x | x in S :: 0 <= x < size
   requires e !in S

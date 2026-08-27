@@ -17,7 +17,7 @@ def count_sloc_between_tag(file_path, tag):
                 if end_line >= 0:
                     raise KeyError(f"End tag {tag} already encountered")
                 end_line = line_number
-    
+
     if start_line < 0 or end_line < 0:
         raise KeyError(f"Tag pairs not found for {tag}")
 
@@ -44,7 +44,7 @@ def count_sloc_between_lines(file_path, start_line, end_line):
 
         if not in_comment_block and start_line <= i <= end_line:
             # Check if the line is not a comment or blank
-            if stripped_line and not stripped_line.startswith('//'): 
+            if stripped_line and not stripped_line.startswith('//'):
                 sloc_count += 1
 
         if '*/' in stripped_line:

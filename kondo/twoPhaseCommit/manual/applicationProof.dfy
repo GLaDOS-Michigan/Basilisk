@@ -24,7 +24,7 @@ ghost predicate ProtocolInv(c: Constants, v: Variables)
 }
 
 // more like WF
-ghost predicate LeaderVotesValid1(c: Constants, v: Variables) 
+ghost predicate LeaderVotesValid1(c: Constants, v: Variables)
   requires v.WF(c)
 {
   forall hostId | hostId in v.GetCoordinator(c).yesVotes
@@ -101,7 +101,7 @@ lemma InvNextLeaderVotesValid(c: Constants, v: Variables, v': Variables)
   }
 }
 
-lemma LeaderTallyReflectsPreferencesInductive(c: Constants, v: Variables, v': Variables) 
+lemma LeaderTallyReflectsPreferencesInductive(c: Constants, v: Variables, v': Variables)
   requires Inv(c, v)
   requires Next(c, v, v')
   requires LeaderVotesValid1(c, v')
@@ -144,7 +144,7 @@ lemma YesVotesContainsAllParticipantsWhenFull(c: Constants, v: Variables)
   }
 }
 
-lemma SetLemma(S: set<HostId>, e: HostId, size: int) 
+lemma SetLemma(S: set<HostId>, e: HostId, size: int)
   requires 0 <= e < size
   requires forall x | x in S :: 0 <= x < size
   requires e !in S

@@ -34,7 +34,7 @@ ghost predicate Inv(c: Constants, v: Variables)
 }
 
 
-ghost predicate Between(start: nat, node: nat, end: nat) 
+ghost predicate Between(start: nat, node: nat, end: nat)
 {
   if start < end then
     start < node < end else
@@ -45,14 +45,14 @@ function Distance(n: nat, start: nat, end: nat) : nat
   requires 0 <= start < n
   requires 0 <= end < n
 {
-  if start <= end then end - start 
+  if start <= end then end - start
   else n - start + end
 }
 
-ghost predicate ChordDominates(c: Constants, v: Variables) 
+ghost predicate ChordDominates(c: Constants, v: Variables)
   requires v.WF(c)
 {
-  forall src:nat, dst:nat, mid:nat | 
+  forall src:nat, dst:nat, mid:nat |
       && c.ValidIdx(src)
       && c.ValidIdx(dst)
       && c.ValidIdx(mid)
@@ -63,10 +63,10 @@ ghost predicate ChordDominates(c: Constants, v: Variables)
 
 // Extra: Given a src node and a dst node such that v.hosts[dst].highestHeard == c.hostConstants[src].hostId
 // any middle node mid between them must have sent Msg(c.hostConstants[src].hostId, mid)
-ghost predicate ChordDominatesMsgs(c: Constants, v: Variables) 
+ghost predicate ChordDominatesMsgs(c: Constants, v: Variables)
   requires v.WF(c)
 {
-  forall src:nat, dst:nat, mid:nat | 
+  forall src:nat, dst:nat, mid:nat |
       && c.ValidIdx(src)
       && c.ValidIdx(dst)
       && c.ValidIdx(mid)
@@ -81,14 +81,14 @@ ghost predicate PayloadGeqSenderHostId(c: Constants, v: Variables) {
   :: msg.val >= c.hostConstants[msg.src].hostId
 }
 
-// Extra: If a node sent a msg with a value that is NOT its hostId, it must have received that 
+// Extra: If a node sent a msg with a value that is NOT its hostId, it must have received that
 // value from its predecessor
-ghost predicate SentNotMyIdImpliesReceivedId(c: Constants, v: Variables) 
+ghost predicate SentNotMyIdImpliesReceivedId(c: Constants, v: Variables)
   requires v.WF(c)
   requires VoteMsgValidSrc(c, v)
 {
   var n := |c.hostConstants|;
-  forall msg | msg in v.network.sentMsgs && msg.val != c.hostConstants[msg.src].hostId 
+  forall msg | msg in v.network.sentMsgs && msg.val != c.hostConstants[msg.src].hostId
   :: Msg(msg.val, Predecessor(n, msg.src)) in v.network.sentMsgs
 }
 
@@ -129,14 +129,14 @@ lemma ChordDominatesInductive(c: Constants, v: Variables, v': Variables)
   ensures ChordDominates(c, v')
   ensures ChordDominatesMsgs(c, v')
 {
-  forall src:nat, dst:nat, mid:nat | 
+  forall src:nat, dst:nat, mid:nat |
       && c.ValidIdx(src)
       && c.ValidIdx(dst)
       && c.ValidIdx(mid)
       && v'.hosts[dst].highestHeard == c.hostConstants[src].hostId
       && Between(src, mid, dst)
-  ensures 
-    && c.hostConstants[mid].hostId < c.hostConstants[src].hostId 
+  ensures
+    && c.hostConstants[mid].hostId < c.hostConstants[src].hostId
     && Msg(c.hostConstants[src].hostId, mid) in v.network.sentMsgs
   {
     var step :| NextStep(c, v, v', step);
@@ -150,12 +150,12 @@ lemma ChordDominatesInductive(c: Constants, v: Variables, v': Variables)
         if pred != mid {
           MidMustHaveSentSrcHostId(c, v', src, mid, dst);
         }
-      } 
+      }
     }
   }
 }
 
-lemma MidMustHaveSentSrcHostId(c: Constants, v: Variables, src: nat, mid: nat, dst: nat) 
+lemma MidMustHaveSentSrcHostId(c: Constants, v: Variables, src: nat, mid: nat, dst: nat)
   requires v.WF(c)
   requires MessageInv(c, v)
   requires SentNotMyIdImpliesReceivedId(c, v)
@@ -164,7 +164,7 @@ lemma MidMustHaveSentSrcHostId(c: Constants, v: Variables, src: nat, mid: nat, d
   requires c.ValidIdx(mid)
   requires v.hosts[dst].highestHeard == c.hostConstants[src].hostId
   requires Between(src, mid, dst)
-  ensures Msg(c.hostConstants[src].hostId, mid) in v.network.sentMsgs 
+  ensures Msg(c.hostConstants[src].hostId, mid) in v.network.sentMsgs
   decreases Distance(|c.hostConstants|, mid, dst)
 {
   var n := |c.hostConstants|;
@@ -178,7 +178,7 @@ lemma MidMustHaveSentSrcHostId(c: Constants, v: Variables, src: nat, mid: nat, d
   }
 }
 
-lemma SuccessorDecreasesDistance(n:nat, start:nat, end:nat) 
+lemma SuccessorDecreasesDistance(n:nat, start:nat, end:nat)
   requires 0 <= start < n
   requires 0 <= end < n
   requires start != end

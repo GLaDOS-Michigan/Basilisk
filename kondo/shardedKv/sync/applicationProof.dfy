@@ -57,12 +57,12 @@ lemma InvNextSafety(c: Constants, v: Variables, v': Variables)
   requires Next(c, v, v')
   ensures Safety(c, v')
 {
-  forall idx1, idx2, k: UniqueKey | 
-    && c.ValidIdx(idx1) 
-    && c.ValidIdx(idx2) 
+  forall idx1, idx2, k: UniqueKey |
+    && c.ValidIdx(idx1)
+    && c.ValidIdx(idx2)
     && Host.HostOwnsUniqueKey(c.hosts[idx1], v'.hosts[idx1], k)
     && Host.HostOwnsUniqueKey(c.hosts[idx2], v'.hosts[idx2], k)
-  ensures 
+  ensures
     idx1 == idx2
   {
     var sysStep :| NextStep(c, v, v', sysStep);

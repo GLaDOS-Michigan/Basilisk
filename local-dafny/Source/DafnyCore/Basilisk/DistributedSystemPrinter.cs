@@ -41,7 +41,7 @@ public static class DistributedSystemPrinter {
 
     // Define Network module
     res.AppendLine(GetFromTemplate("NetworkModule", 0));
-    
+
     // Define DistributedSystem module
     res.AppendLine("module DistributedSystem {");
     res.AppendLine(PrintDistributedSystemModuleBody(file, options));
@@ -60,7 +60,7 @@ public static class DistributedSystemPrinter {
       res.AppendLine(String.Format("  import {0}", i));
     }
     res.AppendLine();
-    
+
     // Declare datatype Constants
     var wr = new StringWriter();
     var printer = new Printer(wr, options);
@@ -70,14 +70,14 @@ public static class DistributedSystemPrinter {
     res.AppendLine();
 
     // Declare datatype Hosts
-    // Hosts is the same as Variables in sync version, with a renaming of the datatype and 
+    // Hosts is the same as Variables in sync version, with a renaming of the datatype and
     // datatype constructor
     wr = new StringWriter();
     printer = new Printer(wr, options);
     printer.PrintDatatype(file.GetVariables(), 2, "dummy string");
     var variablesDecl = wr.ToString();
     var hostsDecl = variablesDecl.Replace(
-        "datatype Variables = Variables", 
+        "datatype Variables = Variables",
         "datatype Hosts = Hosts"
     );  // hacky renaming strategy
     res.Append(hostsDecl);

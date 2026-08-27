@@ -1,7 +1,7 @@
 module UtilitiesLibrary {
   datatype Option<T> = Some(value:T) | None
 
-  ghost function max(x: int, y: int) : (res: int) 
+  ghost function max(x: int, y: int) : (res: int)
     ensures res == x || res == y
     ensures res >= x && res >= y
   {
@@ -35,9 +35,9 @@ module UtilitiesLibrary {
   }
 
   ghost predicate StrictOrdering(s: seq<nat>) {
-    forall i , j | 
-      && 0 <= i < |s| 
-      && 0 <= j < |s| 
+    forall i , j |
+      && 0 <= i < |s|
+      && 0 <= j < |s|
       && i < j
     :: s[i] < s[j]
   }
@@ -48,8 +48,8 @@ module UtilitiesLibrary {
     && s[|s|-1] == y
     && (forall n | x <= n <= y :: n in s)
   }
-  
-  lemma SetComprehensionSize(n: nat) 
+
+  lemma SetComprehensionSize(n: nat)
     ensures |(set x | 0 <= x < n)| == n
     decreases n
   {
@@ -62,7 +62,7 @@ module UtilitiesLibrary {
     }
   }
 
-  lemma SetContainmentCardinality<T>(s1: set<T>, s2: set<T>) 
+  lemma SetContainmentCardinality<T>(s1: set<T>, s2: set<T>)
     requires s1 <= s2
     ensures |s1| <= |s2|
   {
@@ -82,7 +82,7 @@ module UtilitiesLibrary {
     }
   }
 
-  lemma SetContainmentCardinalityStrict<T>(s1: set<T>, s2: set<T>) 
+  lemma SetContainmentCardinalityStrict<T>(s1: set<T>, s2: set<T>)
     requires s1 < s2
     ensures |s1| < |s2|
   {
@@ -91,7 +91,7 @@ module UtilitiesLibrary {
     SetContainmentCardinality(s1, s2');
   }
 
-  lemma UnionIncreasesCardinality<T>(s1: set<T>, s2: set<T>) 
+  lemma UnionIncreasesCardinality<T>(s1: set<T>, s2: set<T>)
     ensures |s1 + s2| >= |s1|
     decreases s2
   {
@@ -110,7 +110,7 @@ module UtilitiesLibrary {
     }
   }
 
-  lemma LargerSetIncreasesCardinalityMore<T>(s: set<T>, s1: set<T>, s2: set<T>) 
+  lemma LargerSetIncreasesCardinalityMore<T>(s: set<T>, s1: set<T>, s2: set<T>)
     requires s1 <= s2
     ensures |s+s1| <= |s+s2|
   {
@@ -183,8 +183,8 @@ module UtilitiesLibrary {
   ghost predicate SetIsQuorum<T>(clusterSize: nat, S: set<T>) {
     |S| > clusterSize / 2
   }
-  
-  lemma QuorumIntersection<T>(cluster: set<T>, S1: set<T>, S2: set<T>) returns (e: T) 
+
+  lemma QuorumIntersection<T>(cluster: set<T>, S1: set<T>, S2: set<T>) returns (e: T)
     requires |S1| + |S2| > |cluster|
     requires S1 <= cluster
     requires S2 <= cluster
@@ -201,7 +201,7 @@ module UtilitiesLibrary {
     e :| e in overlap; // Picks one arbitrary element from overlap set.
   }
 
-  lemma DisjointSetUnionCardinality<T>(S1: set<T>, S2: set<T>) 
+  lemma DisjointSetUnionCardinality<T>(S1: set<T>, S2: set<T>)
     requires S1 * S2 == {}
     ensures |S1| + |S2| == |S1 + S2|
   {
@@ -248,9 +248,9 @@ module UtilitiesLibrary {
   }
 
   ghost predicate SeqOptionMonotoneIncreasing(s: seq<Option<nat>>) {
-    forall i, j | 
-      && 0 <= i < |s| 
-      && 0 <= j < |s| 
+    forall i, j |
+      && 0 <= i < |s|
+      && 0 <= j < |s|
       && i <= j
       && s[i].Some?
     :: s[j].Some? && s[i].value <= s[j].value

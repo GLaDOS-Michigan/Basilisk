@@ -27,7 +27,7 @@ module MonotonicityLibrary {
   datatype MonotonicSeq<T> = MonotonicSeq(s: seq<T>)
   {
     ghost predicate SatisfiesMonotonic(past: MonotonicSeq<T>) {
-      && |past.s| <= |s| 
+      && |past.s| <= |s|
       && (forall i | 0 <= i < |past.s| :: past.s[i] == s[i])
     }
   }

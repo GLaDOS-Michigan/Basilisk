@@ -18,12 +18,12 @@ module Host {
     nominee: MonotonicWriteOnceOption<HostId>,   // monotonic option
     isLeader: MonotonicBool                      // am I the leader?
   ) {
-    ghost predicate HasVoteFrom(voter: HostId) 
+    ghost predicate HasVoteFrom(voter: HostId)
     {
       receivedVotes.Contains(voter)
     }
 
-    ghost predicate Nominates(h: HostId) 
+    ghost predicate Nominates(h: HostId)
     {
       nominee == WOSome(h)
     }
@@ -55,9 +55,9 @@ module Host {
 
   datatype Step =
     | SendVoteReqStep()
-    | RecvVoteReqStep() 
+    | RecvVoteReqStep()
     | RecvVoteStep()
-    | VictoryStep() 
+    | VictoryStep()
     | StutterStep()
 
   ghost predicate NextStep(c: Constants, v: Variables, v': Variables, step: Step, msgOps: MessageOps)
@@ -67,7 +67,7 @@ module Host {
       case RecvVoteReqStep => NextHostRecvVoteReqStep(c, v, v', msgOps)
       case RecvVoteStep => NextHostRecvVoteStep(c, v, v', msgOps)
       case VictoryStep => NextVictoryStep(c, v, v', msgOps)
-      case StutterStep => 
+      case StutterStep =>
           && v == v'
           && msgOps.send == None
           && msgOps.recv == None
@@ -127,7 +127,7 @@ module Host {
   }
 
   // Receive predicate trigger
-  // First 2 arguments are mandatory. Third argument identifies voter. 
+  // First 2 arguments are mandatory. Third argument identifies voter.
   ghost predicate ReceiveVoteTrigger(c: Constants, v: Variables, voter: HostId) {
     && v.receivedVotes.Contains(voter)
   }

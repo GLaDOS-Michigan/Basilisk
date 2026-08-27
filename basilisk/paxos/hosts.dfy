@@ -30,7 +30,7 @@ module LeaderHost {
     ghost predicate HeardAtLeast(b: LeaderId) {
       highestHeardBallot.MNSome? && highestHeardBallot.value >= b
     }
-    
+
     // My highestHeardBallot < b
     ghost predicate HeardAtMost(b: LeaderId) {
       highestHeardBallot.MNNone? || highestHeardBallot.value < b
@@ -67,7 +67,7 @@ module LeaderHost {
     && (forall i | 0 <= i < |grp_c| :: grp_v[i].WF(grp_c[i]))
   }
 
-  ghost predicate GroupInit(grp_c: seq<Constants>, grp_v: seq<Variables>, f: nat) 
+  ghost predicate GroupInit(grp_c: seq<Constants>, grp_v: seq<Variables>, f: nat)
     requires GroupWF(grp_c, grp_v, f)
   {
     forall i | 0 <= i < |grp_c| :: Init(grp_c[i], grp_v[i])
@@ -79,10 +79,10 @@ module LeaderHost {
   }
 
   datatype Step =
-    | PrepareStep() 
+    | PrepareStep()
     | ReceivePromiseUpdateStep()
-    | ReceivePromiseNoUpdateStep() 
-    | ProposeStep() 
+    | ReceivePromiseNoUpdateStep()
+    | ProposeStep()
     | StutterStep()
 
   ghost predicate NextStep(c: Constants, v: Variables, v': Variables, step: Step, msgOps: MessageOps)
@@ -125,13 +125,13 @@ module LeaderHost {
     && bal == c.id  // message is meant for me
     && |v.receivedPromisesAndValue.promises| <= c.f
     && acc !in v.receivedPromisesAndValue.promises
-    && var doUpdate := 
-          && vbOpt.Some? 
+    && var doUpdate :=
+          && vbOpt.Some?
           && v.HeardAtMost(vbOpt.value.b);
     && !doUpdate
     && v' == v.(
-        receivedPromisesAndValue := 
-          v.receivedPromisesAndValue.(promises 
+        receivedPromisesAndValue :=
+          v.receivedPromisesAndValue.(promises
             := v.receivedPromisesAndValue.promises + {acc})
     )
   }
@@ -151,12 +151,12 @@ module LeaderHost {
     && bal == c.id  // message is meant for me
     && |v.receivedPromisesAndValue.promises| <= c.f
     && acc !in v.receivedPromisesAndValue.promises
-    && var doUpdate := 
-          && vbOpt.Some? 
+    && var doUpdate :=
+          && vbOpt.Some?
           && v.HeardAtMost(vbOpt.value.b);
     && doUpdate
     && v' == v.(
-              receivedPromisesAndValue := 
+              receivedPromisesAndValue :=
                 v.receivedPromisesAndValue.(
                   promises := v.receivedPromisesAndValue.promises + {acc},
                   value := vbOpt.value.v),
@@ -261,7 +261,7 @@ module AcceptorHost {
     && (forall i | 0 <= i < |grp_c| :: grp_v[i].WF())
   }
 
-  ghost predicate GroupInit(grp_c: seq<Constants>, grp_v: seq<Variables>, f: nat) 
+  ghost predicate GroupInit(grp_c: seq<Constants>, grp_v: seq<Variables>, f: nat)
     requires GroupWF(grp_c, grp_v, f)
   {
     forall i | 0 <= i < |grp_c| :: Init(grp_c[i], grp_v[i])
@@ -273,8 +273,8 @@ module AcceptorHost {
   }
 
   datatype Step =
-    ReceivePrepareStep() 
-    | ReceiveProposeStep() 
+    ReceivePrepareStep()
+    | ReceiveProposeStep()
     | StutterStep()
 
   ghost predicate NextStep(c: Constants, v: Variables, v': Variables, step: Step, msgOps: MessageOps)
@@ -321,7 +321,7 @@ module AcceptorHost {
     && doAccept
     && outMsg == Accept(VB(val, bal), c.id) // outMsg
     && v' == v.(
-          promised := MNSome(bal), 
+          promised := MNSome(bal),
           acceptedVB := MVBSome(VB(val, bal)))
   }
 
@@ -359,7 +359,7 @@ module LearnerHost {
     receivedAccepts: MonotonicReceivedAcceptsMap,
     learned: Option<Value>
   ) {
-    
+
     ghost predicate HasLearnedValue(v: Value) {
       learned == Some(v)
     }
@@ -377,7 +377,7 @@ module LearnerHost {
     && |grp_v| == |grp_c|
   }
 
-  ghost predicate GroupInit(grp_c: seq<Constants>, grp_v: seq<Variables>, f: nat) 
+  ghost predicate GroupInit(grp_c: seq<Constants>, grp_v: seq<Variables>, f: nat)
     requires GroupWF(grp_c, grp_v, f)
   {
     forall i | 0 <= i < |grp_c| :: Init(grp_c[i], grp_v[i])
@@ -399,15 +399,15 @@ module LearnerHost {
       case StutterStep => NextStutterStep3(c, v, v', msgOps)
   }
 
-  function UpdateReceivedAccepts(receivedAccepts: MonotonicReceivedAcceptsMap, 
+  function UpdateReceivedAccepts(receivedAccepts: MonotonicReceivedAcceptsMap,
     vb: ValBal, acc: AcceptorId) : (out: MonotonicReceivedAcceptsMap)
     ensures vb in receivedAccepts.m ==> vb in out.m
     ensures vb in receivedAccepts.m ==> |receivedAccepts.m[vb]| <= |out.m[vb]|
   {
-    if vb in receivedAccepts.m then 
+    if vb in receivedAccepts.m then
       UnionIncreasesCardinality(receivedAccepts.m[vb], {acc});
       RA(receivedAccepts.m[vb := receivedAccepts.m[vb] + {acc}])
-    else 
+    else
       RA(receivedAccepts.m[vb := {acc}])
   }
 
@@ -424,7 +424,7 @@ module LearnerHost {
       receivedAccepts := UpdateReceivedAccepts(v.receivedAccepts, inMsg.vb, inMsg.acc)
     )
   }
-  
+
   ghost predicate NextLearnStep(c: Constants, v: Variables, v': Variables, vb: ValBal, msgOps: MessageOps) {
     && msgOps.recv.None?
     && msgOps.send.None?

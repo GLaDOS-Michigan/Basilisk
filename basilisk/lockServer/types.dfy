@@ -6,8 +6,8 @@ module Types {
   type HostId = nat
   type UniqueKey = int
 
-  datatype Message = 
-    | Grant(src: nat, dst: nat, epoch: nat) 
+  datatype Message =
+    | Grant(src: nat, dst: nat, epoch: nat)
     | Release(src: nat, epoch: nat)
   {
     function Src() : nat {

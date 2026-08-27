@@ -13,7 +13,7 @@ module CoordinatorHost {
   }
 
   datatype Variables = Variables(
-    decision: MonotonicWriteOnceOption<Decision>, 
+    decision: MonotonicWriteOnceOption<Decision>,
     yesVotes: set<HostId>,
     noVotes: set<HostId>
   )
@@ -78,7 +78,7 @@ module CoordinatorHost {
   // Send predicate
   ghost predicate SendVoteReqMsg(c: Constants, v: Variables, v': Variables, msg: Message) {
     && msg == VoteReqMsg
-    && v' == v 
+    && v' == v
   }
 
   ghost predicate NextReceiveStep(c: Constants, v: Variables, v': Variables, msgOps: MessageOps) {
@@ -93,7 +93,7 @@ module CoordinatorHost {
     && msg.VoteMsg?
     && var vote, src := msg.v, msg.src;
     // update v'
-    && if vote == Yes then 
+    && if vote == Yes then
         v' == v.(
           yesVotes := v.yesVotes + {src}
         )
@@ -104,7 +104,7 @@ module CoordinatorHost {
   }
 
   // Receive vote trigger
-  // First 2 arguments are mandatory. Second argument identifies target host. 
+  // First 2 arguments are mandatory. Second argument identifies target host.
   ghost predicate ReceiveVoteTrigger1(c: Constants, v: Variables, voterId: HostId) {
     voterId in v.yesVotes
   }
@@ -212,7 +212,7 @@ module ParticipantHost {
       case ReceiveVoteReqStep => NextReceiveVoteReqStep(c, v, v', msgOps)
       case ReceiveDecisionStep => NextReceiveDecisionStep(c, v, v', msgOps)
       case SendVoteStep => NextSendVoteStep(c, v, v', msgOps)
-      case StutterStep => 
+      case StutterStep =>
           && v == v'
           && msgOps.send == msgOps.recv == None
   }

@@ -92,7 +92,7 @@ module DistributedSystem {
     && |v'.server| == 1
   }
 
-  datatype Step = 
+  datatype Step =
     | ServerStep(msgOps: MessageOps)
     | ClientStep(actor: int, msgOps: MessageOps)
 
@@ -100,7 +100,7 @@ module DistributedSystem {
     requires v.WF(c) && v'.WF(c)
   {
     && Network.Next(v.network, v'.network, step.msgOps)
-    && match step 
+    && match step
       case ClientStep(actor, msgOps) => NextClientStep(c, v, v', actor, msgOps)
       case ServerStep(msgOps) => NextServerStep(c, v, v', msgOps)
   }

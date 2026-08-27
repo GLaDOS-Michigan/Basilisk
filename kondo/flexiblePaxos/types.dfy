@@ -48,19 +48,19 @@ datatype MonotonicVBOption = MVBSome(value: ValBal) | MVBNone
   }
 }
 
-datatype MonotonicReceivedAccepts = RA(m: map<ValBal, set<AcceptorId>>) 
+datatype MonotonicReceivedAccepts = RA(m: map<ValBal, set<AcceptorId>>)
 {
   ghost predicate SatisfiesMonotonic(past: MonotonicReceivedAccepts) {
-    forall vb | 
-    && vb in past.m 
-    :: 
+    forall vb |
+    && vb in past.m
+    ::
       && 0 < |past.m[vb]|
       && vb in this.m
       && past.m[vb] <= this.m[vb]
   }
 }
 
-datatype MonotonicPromisesAndValue = PV(promises: set<AcceptorId>, value: Value, p1Quorum: nat) 
+datatype MonotonicPromisesAndValue = PV(promises: set<AcceptorId>, value: Value, p1Quorum: nat)
 {
   ghost predicate SatisfiesMonotonic(past: MonotonicPromisesAndValue) {
     && past.promises <= this.promises

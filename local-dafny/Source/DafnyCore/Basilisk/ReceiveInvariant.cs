@@ -350,7 +350,7 @@ namespace Microsoft.Dafny
           var id = int.Parse(new string(name.SkipWhile(c=>!char.IsDigit(c))
                          .TakeWhile(c=>char.IsDigit(c))
                          .ToArray()));
-          
+
           var fields = new List<BasiliskField>();
           foreach (var formal in topLevelDecl.Formals) {
             if (formal.Name == "c" || formal.Name == "v" || formal.Name == "i" || formal.Name == "idx") {
@@ -416,7 +416,7 @@ namespace Microsoft.Dafny
     // Heavy-duty lifting here
     private static List<ReceiveSkolemization> ParseHostFootprint(string hostModule, string hostField, HostFootprint hostFootprint) {
 
-      var fieldsMap = new Dictionary<string, BasiliskField>(); // map of field name to their BasiliskField object 
+      var fieldsMap = new Dictionary<string, BasiliskField>(); // map of field name to their BasiliskField object
       var stepMap = new Dictionary<string, HashSet<string>>(); // map of step names to list of field names
 
       // Populate fieldsMap and stepMap
@@ -490,9 +490,9 @@ namespace Microsoft.Dafny
 
       if (isRecvSend) {
         res += string.Format(
-          RegularInvPrinter.GetFromTemplate("ReceiveSkolemization2", 0), 
-          SkolemizationName(), 
-          SkolemizationFormals(), 
+          RegularInvPrinter.GetFromTemplate("ReceiveSkolemization2", 0),
+          SkolemizationName(),
+          SkolemizationFormals(),
           HostModule,
           HostField,
           WitnessConditionName(),
@@ -501,9 +501,9 @@ namespace Microsoft.Dafny
         );
       } else if (IsNullMsg) {
         res += string.Format(
-          RegularInvPrinter.GetFromTemplate("ReceiveSkolemizationNull", 0), 
-          SkolemizationName(), 
-          SkolemizationFormals(), 
+          RegularInvPrinter.GetFromTemplate("ReceiveSkolemizationNull", 0),
+          SkolemizationName(),
+          SkolemizationFormals(),
           HostModule,
           HostField,
           WitnessConditionName(),
@@ -511,9 +511,9 @@ namespace Microsoft.Dafny
         );
       } else {
         res += string.Format(
-          RegularInvPrinter.GetFromTemplate("ReceiveSkolemization", 0), 
-          SkolemizationName(), 
-          SkolemizationFormals(), 
+          RegularInvPrinter.GetFromTemplate("ReceiveSkolemization", 0),
+          SkolemizationName(),
+          SkolemizationFormals(),
           HostModule,
           HostField,
           WitnessConditionName(),
@@ -671,7 +671,7 @@ namespace Microsoft.Dafny
       if (type.StartsWith("set<")) {
           // Dafny built-in set
           return (string.Format("a{0} in v.History(i).{1}[idx].{2}", count, HostField, name), count+1);
-        } else if (type.StartsWith("MonotonicSet<")) {  
+        } else if (type.StartsWith("MonotonicSet<")) {
           // Basilisk built-in MonotonicSet
           return (string.Format("a{0} in v.History(i).{1}[idx].{2}.s", count, HostField, name), count+1);
         } else if (type.StartsWith("map<")) {
@@ -716,10 +716,10 @@ namespace Microsoft.Dafny
         return "";
       }
       return string.Format(
-        RegularInvPrinter.GetFromTemplate("StepWitnessCondition", 0), 
-        WitnessConditionName(), 
-        SkolemizationFormals(), 
-        HostField, 
+        RegularInvPrinter.GetFromTemplate("StepWitnessCondition", 0),
+        WitnessConditionName(),
+        SkolemizationFormals(),
+        HostField,
         WitnessExpression()
       );
     }

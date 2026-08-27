@@ -66,7 +66,7 @@ ghost predicate LeaderTallyReflectsPreferences(c: Constants, v: Variables)
         0 <= hostId < |c.participants| && GetParticipantPreference(c, hostId) == No )
 }
 
-lemma InvImpliesLeaderTallyReflectsPreferences(c: Constants, v: Variables) 
+lemma InvImpliesLeaderTallyReflectsPreferences(c: Constants, v: Variables)
   requires RegularInvs(c, v)
   ensures LeaderTallyReflectsPreferences(c, v)
 {
@@ -127,7 +127,7 @@ lemma YesVotesContainsAllParticipantsWhenFull(c: Constants, v: Variables, i: int
   }
 }
 
-lemma SetLemma(S: set<HostId>, e: HostId, size: int) 
+lemma SetLemma(S: set<HostId>, e: HostId, size: int)
   requires 0 <= e < size
   requires forall x | x in S :: 0 <= x < size
   requires e !in S

@@ -53,9 +53,9 @@ datatype Variables = Variables(
   // ghost predicate LdrHeardAtLeastAtSlot(slot: int, b: Ballot) {
   //   ls.highestHeardBallot.Some? && BalLteq(b, ls.highestHeardBallot.value)
   // }
-  
+
   // My highestHeardBallot < b
-  ghost predicate LdrHeardAtMostAtSlot(c: Constants, slot: int, b: Ballot) 
+  ghost predicate LdrHeardAtMostAtSlot(c: Constants, slot: int, b: Ballot)
     requires WF(c)
     requires c.ValidSlot(slot)
   {
@@ -66,7 +66,7 @@ datatype Variables = Variables(
     && |ls.promises| >= c.f+1
   }
 
-  ghost function LdrValue(slot: int) : Value 
+  ghost function LdrValue(slot: int) : Value
     requires 0 <= slot < |ls.logHighestHeardValues|
   {
     ls.logHighestHeardValues[slot].v
@@ -96,11 +96,11 @@ datatype Variables = Variables(
   //   && b == promised.bal
   // }
 
-  ghost predicate HasLearnedValueAtSlot(v: Value, slot: nat) 
+  ghost predicate HasLearnedValueAtSlot(v: Value, slot: nat)
     requires 0 <= slot < |logLearned|
   {
     logLearned[slot] == Some(v)
-  }    
+  }
 }
 
 
@@ -121,7 +121,7 @@ ghost predicate GroupWF(grp_c: seq<Constants>, grp_v: seq<Variables>, f: nat, lo
   && (forall i | 0 <= i < |grp_c| :: grp_v[i].WF(grp_c[i]))
 }
 
-ghost predicate GroupInit(grp_c: seq<Constants>, grp_v: seq<Variables>, f: nat, logCap: int) 
+ghost predicate GroupInit(grp_c: seq<Constants>, grp_v: seq<Variables>, f: nat, logCap: int)
   requires GroupWF(grp_c, grp_v, f, logCap)
 {
   forall i | 0 <= i < |grp_c| :: Init(grp_c[i], grp_v[i])
@@ -198,7 +198,7 @@ ghost predicate SendPrepare(c: Constants, v: Variables, v': Variables, outMsg: M
   && v' == v
 }
 
-ghost predicate NextReceivePromiseStep(c: Constants, v: Variables, v': Variables, msgOps: MessageOps) 
+ghost predicate NextReceivePromiseStep(c: Constants, v: Variables, v': Variables, msgOps: MessageOps)
   requires v.WF(c)
 {
   && msgOps.recv.Some?
@@ -207,7 +207,7 @@ ghost predicate NextReceivePromiseStep(c: Constants, v: Variables, v': Variables
 }
 
 // Receive predicate
-ghost predicate ReceivePromise(c: Constants, v: Variables, v': Variables, inMsg: Message) 
+ghost predicate ReceivePromise(c: Constants, v: Variables, v': Variables, inMsg: Message)
   requires v.WF(c)
 {
   && inMsg.Promise?
@@ -219,15 +219,15 @@ ghost predicate ReceivePromise(c: Constants, v: Variables, v': Variables, inMsg:
   && bal == v.ls.currBal  // message is meant for me
   && |v.ls.promises| <= c.f
   && acc !in v.ls.promises
-  
+
   // Do update for each slot
   && v' == v.(
     ls := v.ls.(
-      logHighestHeardValues := 
+      logHighestHeardValues :=
         seq(c.logCap, i =>
           if 0 <= i < c.logCap then
-            var doUpdate := 
-                && accLogAcceptedVB.getSlot(i).Some? 
+            var doUpdate :=
+                && accLogAcceptedVB.getSlot(i).Some?
                 && v.LdrHeardAtMostAtSlot(c, i, accLogAcceptedVB.getSlot(i).value.b);
             if doUpdate then HH(Some(accLogAcceptedVB.getSlot(i).value.b), accLogAcceptedVB.getSlot(i).value.v) else v.ls.logHighestHeardValues[i]
           else
@@ -238,7 +238,7 @@ ghost predicate ReceivePromise(c: Constants, v: Variables, v': Variables, inMsg:
   )
 }
 
-ghost predicate NextProposeStep(c: Constants, v: Variables, v': Variables, msgOps: MessageOps) 
+ghost predicate NextProposeStep(c: Constants, v: Variables, v': Variables, msgOps: MessageOps)
   requires v.WF(c)
 {
   && msgOps.recv.None?
@@ -247,7 +247,7 @@ ghost predicate NextProposeStep(c: Constants, v: Variables, v': Variables, msgOp
 }
 
 // Send predicate
-ghost predicate SendPropose(c: Constants, v: Variables, v': Variables, outMsg: Message) 
+ghost predicate SendPropose(c: Constants, v: Variables, v': Variables, outMsg: Message)
   requires v.WF(c)
 {
   // enabling conditions
@@ -262,7 +262,7 @@ ghost predicate SendPropose(c: Constants, v: Variables, v': Variables, outMsg: M
   && c.ValidSlot(v'.nextSlotToPropose)
 }
 
-ghost predicate NextReceivePreemptStep(c: Constants, v: Variables, v': Variables, msgOps: MessageOps) 
+ghost predicate NextReceivePreemptStep(c: Constants, v: Variables, v': Variables, msgOps: MessageOps)
   requires c.WF()
 {
   && msgOps.recv.Some?
@@ -273,7 +273,7 @@ ghost predicate NextReceivePreemptStep(c: Constants, v: Variables, v': Variables
 
 // Receive predicate
 // Preempt1 and Preempt2 comes from Kondo's restriction of one message type per send action
-ghost predicate ReceivePreempt1(c: Constants, v: Variables, v': Variables, inMsg: Message) 
+ghost predicate ReceivePreempt1(c: Constants, v: Variables, v': Variables, inMsg: Message)
   requires c.WF()
 {
   && inMsg.Preempt1?
@@ -291,7 +291,7 @@ ghost predicate ReceivePreempt1(c: Constants, v: Variables, v': Variables, inMsg
 
 // Receive predicate
 // Preempt1 and Preempt2 comes from Kondo's restriction of one message type per send action
-ghost predicate ReceivePreempt2(c: Constants, v: Variables, v': Variables, inMsg: Message) 
+ghost predicate ReceivePreempt2(c: Constants, v: Variables, v': Variables, inMsg: Message)
   requires c.WF()
 {
   && inMsg.Preempt2?
@@ -343,7 +343,7 @@ ghost predicate ReceivePrepareSendPreempt1(c: Constants, v: Variables, v': Varia
   && outMsg == Preempt1(c.id, inMsg.bal.id, v.promised.bal)
 }
 
-ghost predicate NextAcceptStep(c: Constants, v: Variables, v': Variables, msgOps: MessageOps) 
+ghost predicate NextAcceptStep(c: Constants, v: Variables, v': Variables, msgOps: MessageOps)
   requires v.WF(c)
 {
   && msgOps.recv.Some?
@@ -352,7 +352,7 @@ ghost predicate NextAcceptStep(c: Constants, v: Variables, v': Variables, msgOps
 }
 
 // Receive-Send predicate
-ghost predicate ReceiveProposeSendAccept(c: Constants, v: Variables, v': Variables, inMsg: Message, outMsg: Message) 
+ghost predicate ReceiveProposeSendAccept(c: Constants, v: Variables, v': Variables, inMsg: Message, outMsg: Message)
   requires v.WF(c)
 {
   // enabling conditions
@@ -366,7 +366,7 @@ ghost predicate ReceiveProposeSendAccept(c: Constants, v: Variables, v': Variabl
   // update v' and specify outMsg
   && outMsg == Accept(slot, VB(val, bal), c.id) // outMsg
   && v' == v.(
-      promised := MBSome(bal), 
+      promised := MBSome(bal),
       logAcceptedVB := v.logAcceptedVB.updateSlot(slot, Some(VB(val, bal)))
     )
 }
@@ -392,7 +392,7 @@ ghost predicate ReceiveProposeSendPreempt2(c: Constants, v: Variables, v': Varia
 
 /////////////////////////////// Learner actions
 
-ghost predicate NextReceiveAcceptStep(c: Constants, v: Variables, v': Variables, msgOps: MessageOps) 
+ghost predicate NextReceiveAcceptStep(c: Constants, v: Variables, v': Variables, msgOps: MessageOps)
   requires v.WF(c)
 {
   && msgOps.recv.Some?
@@ -401,7 +401,7 @@ ghost predicate NextReceiveAcceptStep(c: Constants, v: Variables, v': Variables,
 }
 
 // Receive predicate
-ghost predicate ReceiveAccept(c: Constants, v: Variables, v': Variables, inMsg: Message) 
+ghost predicate ReceiveAccept(c: Constants, v: Variables, v': Variables, inMsg: Message)
   requires v.WF(c)
 {
   && inMsg.Accept?
@@ -413,21 +413,21 @@ ghost predicate ReceiveAccept(c: Constants, v: Variables, v': Variables, inMsg: 
 }
 
 function UpdateReceivedAcceptsOneSlot(receivedAccepts: map<ValBal, NonemptyHostSet>, vb: ValBal, acc: HostId) : (out: map<ValBal, NonemptyHostSet>)
-  // Tony: ensures clauses are exactly how I can prove to the user, and tell dafny, that 
+  // Tony: ensures clauses are exactly how I can prove to the user, and tell dafny, that
   // data structures annotated as monotonic actually are monotonic --- cool!
   ensures vb in out
   ensures 0 < |out[vb]|
   ensures vb in receivedAccepts ==> vb in out
   ensures vb in receivedAccepts ==> |receivedAccepts[vb]| <= |out[vb]|
 {
-  if vb in receivedAccepts then 
+  if vb in receivedAccepts then
     UnionIncreasesCardinality(receivedAccepts[vb], {acc});
     receivedAccepts[vb := receivedAccepts[vb] + {acc}]
-  else 
+  else
     receivedAccepts[vb := {acc}]
 }
 
-ghost predicate NextLearnStep(c: Constants, v: Variables, v': Variables, vb: ValBal, msgOps: MessageOps, slot: int) 
+ghost predicate NextLearnStep(c: Constants, v: Variables, v': Variables, vb: ValBal, msgOps: MessageOps, slot: int)
   requires v.WF(c)
 {
   && msgOps.recv.None?

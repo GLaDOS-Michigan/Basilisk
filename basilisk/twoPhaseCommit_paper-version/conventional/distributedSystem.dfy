@@ -40,7 +40,7 @@ module DistributedSystem {
       id < |participants|
     }
 
-    ghost function GetCoordinator() : CoordinatorHost.Constants 
+    ghost function GetCoordinator() : CoordinatorHost.Constants
       requires WF()
     {
       coordinator[0]
@@ -59,7 +59,7 @@ module DistributedSystem {
       && ParticipantHost.GroupWF(c.participants, participants)
     }
 
-    ghost function GetCoordinator(c: Constants) : CoordinatorHost.Variables 
+    ghost function GetCoordinator(c: Constants) : CoordinatorHost.Variables
       requires WF(c)
     {
       coordinator[0]

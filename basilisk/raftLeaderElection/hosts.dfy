@@ -15,9 +15,9 @@ module Host {
       && (other.term == term ==> (other.acceptors <= acceptors && other.votedFor == votedFor))
     }
   }
-  
+
   datatype Constants = Constants(idx: nat, f: nat)
-    
+
   datatype Variables = Variables(
     status: Status,
     ms: MonotonicTermState
@@ -33,14 +33,14 @@ module Host {
   {
     && (|grp_c| > 1)
     && (|grp_c| == |grp_v| == 2*f+1)
-    && (forall idx | 0 <= idx < |grp_c| :: 
+    && (forall idx | 0 <= idx < |grp_c| ::
       && (grp_c[idx].idx == idx && grp_c[idx].f == f)
       && (grp_v[idx].WF(grp_c[idx])))
   }
   ghost predicate GroupInit(grp_c: seq<Constants>, grp_v: seq<Variables>, f:nat)
   {
     && (GroupWF(grp_c, grp_v, f))
-    && (forall idx | 0 <= idx < |grp_v| :: 
+    && (forall idx | 0 <= idx < |grp_v| ::
       && (grp_v[idx].status.Follower?)
       && (grp_v[idx].ms.term == 0)
       && (grp_v[idx].ms.acceptors == {idx})

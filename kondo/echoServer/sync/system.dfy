@@ -14,12 +14,12 @@ datatype Constants = Constants(
     && ClientHost.GroupWFConstants(clients)
     && ServerHost.GroupWFConstants(servers)
   }
-  
+
   ghost predicate ValidClientIdx(idx: nat) {
     idx < |clients|
   }
 
-  ghost function GetServer() : ServerHost.Constants 
+  ghost function GetServer() : ServerHost.Constants
     requires WF()
   {
     servers[0]
@@ -36,7 +36,7 @@ datatype Variables = Variables(
     && ServerHost.GroupWF(c.servers, servers)
   }
 
-  ghost function GetServer(c: Constants) : ServerHost.Variables 
+  ghost function GetServer(c: Constants) : ServerHost.Variables
     requires WF(c)
   {
     servers[0]

@@ -19,7 +19,7 @@ module System {
       id < |participants|
     }
 
-    ghost function GetCoordinator() : CoordinatorHost.Constants 
+    ghost function GetCoordinator() : CoordinatorHost.Constants
       requires WF()
     {
       coordinator[0]
@@ -37,7 +37,7 @@ module System {
       && ParticipantHost.GroupWF(c.participants, participants)
     }
 
-    ghost function GetCoordinator(c: Constants) : CoordinatorHost.Variables 
+    ghost function GetCoordinator(c: Constants) : CoordinatorHost.Variables
       requires WF(c)
     {
       coordinator[0]
@@ -57,8 +57,8 @@ module System {
     | DecideStep(transmit: Transmit)
     | StutterStep()
 
-    
-  ghost predicate NextVoteReqStep(c: Constants, v: Variables, v': Variables, participant: HostId, transmit: Transmit) 
+
+  ghost predicate NextVoteReqStep(c: Constants, v: Variables, v': Variables, participant: HostId, transmit: Transmit)
     requires v.WF(c) && v'.WF(c)
   {
     // Coordinator action
@@ -72,7 +72,7 @@ module System {
         ::  v.participants[x] == v'.participants[x])
   }
 
-  ghost predicate NextSendVoteStep(c: Constants, v: Variables, v': Variables, pidx: HostId, transmit: Transmit) 
+  ghost predicate NextSendVoteStep(c: Constants, v: Variables, v': Variables, pidx: HostId, transmit: Transmit)
     requires v.WF(c) && v'.WF(c)
   {
     // Participant action

@@ -49,7 +49,7 @@ module DistributedSystem {
       && Host.GroupWF(c.hostConstants, hosts)
     }
 
-    ghost predicate IsLeader(c: Constants, h: HostId) 
+    ghost predicate IsLeader(c: Constants, h: HostId)
       requires WF(c)
       requires c.ValidHostId(h)
     {

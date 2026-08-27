@@ -14,13 +14,13 @@ module Obligations {
     v.clients[idx].hasLock
   }
 
-  ghost predicate Safety(c: Constants, v: Variables) 
+  ghost predicate Safety(c: Constants, v: Variables)
     requires c.WF()
     requires v.WF(c)
   {
-  forall idx1, idx2 | 
-    && c.ValidClientIdx(idx1) 
-    && c.ValidClientIdx(idx2) 
+  forall idx1, idx2 |
+    && c.ValidClientIdx(idx1)
+    && c.ValidClientIdx(idx2)
     && HoldsLock(c, v, idx1)
     && HoldsLock(c, v, idx2)
     :: idx1 == idx2

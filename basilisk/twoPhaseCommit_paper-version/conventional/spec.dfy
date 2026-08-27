@@ -38,40 +38,40 @@ module Obligations {
   ***************************************************************************************/
 
 
-  ghost predicate PartipantHasDecided(c: Constants, h: Variables, pidx: HostId) 
+  ghost predicate PartipantHasDecided(c: Constants, h: Variables, pidx: HostId)
     requires h.WF(c)
     requires c.ValidParticipantId(pidx)
   {
     h.participants[pidx].decision.Some?
   }
 
-  ghost predicate ParticipantDecidedCommit(c: Constants, h: Variables, pidx: HostId) 
+  ghost predicate ParticipantDecidedCommit(c: Constants, h: Variables, pidx: HostId)
     requires h.WF(c)
     requires c.ValidParticipantId(pidx)
   {
     h.participants[pidx].decision == Some(Commit)
   }
 
-  ghost predicate ParticipantDecidedAbort(c: Constants, h: Variables, pidx: HostId) 
+  ghost predicate ParticipantDecidedAbort(c: Constants, h: Variables, pidx: HostId)
     requires h.WF(c)
     requires c.ValidParticipantId(pidx)
   {
     h.participants[pidx].decision == Some(Abort)
   }
 
-  ghost predicate CoordinatorHasDecided(c: Constants, h: Variables) 
+  ghost predicate CoordinatorHasDecided(c: Constants, h: Variables)
     requires h.WF(c)
   {
     h.GetCoordinator(c).decision.Some?
   }
 
-  ghost predicate CoordinatorDecidedCommit(c: Constants, h: Variables) 
+  ghost predicate CoordinatorDecidedCommit(c: Constants, h: Variables)
     requires h.WF(c)
   {
     h.GetCoordinator(c).decision == Some(Commit)
   }
 
-  ghost predicate CoordinatorDecidedAbort(c: Constants, h: Variables) 
+  ghost predicate CoordinatorDecidedAbort(c: Constants, h: Variables)
     requires h.WF(c)
   {
     h.GetCoordinator(c).decision == Some(Abort)
@@ -84,7 +84,7 @@ module Obligations {
     c.participants[i].preference
   }
 
-  ghost predicate AllPreferYes(c: Constants) 
+  ghost predicate AllPreferYes(c: Constants)
     requires c.WF()
   {
     forall j: HostId | c.ValidParticipantId(j) :: c.participants[j].preference == Yes

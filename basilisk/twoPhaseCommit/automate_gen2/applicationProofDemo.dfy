@@ -68,7 +68,7 @@ ghost predicate LeaderTallyReflectsPreferences(c: Constants, v: Variables)
         0 <= hostId < |c.participants| && GetParticipantPreference(c, hostId) == No )
 }
 
-lemma InvImpliesLeaderTallyReflectsPreferences(c: Constants, v: Variables) 
+lemma InvImpliesLeaderTallyReflectsPreferences(c: Constants, v: Variables)
   requires RegularInvs(c, v)
   ensures LeaderTallyReflectsPreferences(c, v)
 {
@@ -124,7 +124,7 @@ lemma AC4Proof(c: Constants, v: Variables)
   requires RegularInvs(c, v)
   ensures SafetyAC4(c, v)
 {
-  forall pidx: nat | c.ValidParticipantId(pidx) && PartipantHasDecided(c, v.Last(), pidx) && AllPreferYes(c) 
+  forall pidx: nat | c.ValidParticipantId(pidx) && PartipantHasDecided(c, v.Last(), pidx) && AllPreferYes(c)
   ensures ParticipantDecidedCommit(c, v.Last(), pidx) {
     if !ParticipantDecidedCommit(c, v.Last(), pidx) {
       reveal_ValidHistory();
@@ -158,7 +158,7 @@ lemma YesVotesContainsAllParticipantsWhenFull(c: Constants, v: Variables, i: int
   }
 }
 
-lemma SetLemma(S: set<HostId>, e: HostId, size: int) 
+lemma SetLemma(S: set<HostId>, e: HostId, size: int)
   requires 0 <= e < size
   requires forall x | x in S :: 0 <= x < size
   requires e !in S

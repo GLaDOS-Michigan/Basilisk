@@ -23,8 +23,8 @@ $dafnyMsgInv "$scriptpath/customMessageInvariants.dfy" > autoInvs.log
 time {
     echo "Verifying batch 1/2"
     echo "$files1" | tr " " "\n";
-    $dafnyVerify $files1; 
+    $dafnyVerify $files1;
     echo "Verifying batch 2/2"
     echo "$files2" | tr " " "\n";
-    $dafnyVerify $files2; 
+    $dafnyVerify $files2;
 }

@@ -13,17 +13,17 @@ import opened Obligations
 ghost predicate VoteMsgValidSrc(c: Constants, v: Variables)
   requires v.WF(c)
 {
-  forall msg | msg in v.network.sentMsgs && msg.VoteMsg? 
+  forall msg | msg in v.network.sentMsgs && msg.VoteMsg?
   :: c.ValidParticipantId(msg.src)
 }
 
-// VoteMsg reflects the preference of the voter 
+// VoteMsg reflects the preference of the voter
 // Note that "0 <= msg.src < |c.hosts|-1" is prereq of GetParticipantPreference
 ghost predicate VoteMsgAgreeWithVoter(c: Constants, v: Variables)
   requires v.WF(c)
   requires VoteMsgValidSrc(c, v)
 {
-  forall msg | msg in v.network.sentMsgs && msg.VoteMsg? 
+  forall msg | msg in v.network.sentMsgs && msg.VoteMsg?
   :: GetParticipantPreference(c, msg.src) == msg.v
 }
 
@@ -32,7 +32,7 @@ ghost predicate VoteMsgAgreeWithVoter(c: Constants, v: Variables)
 ghost predicate DecisionMsgsAgreeWithLeader1(c: Constants, v: Variables)
   requires v.WF(c)
 {
-  forall msg | msg in v.network.sentMsgs && msg.DecideMsg? 
+  forall msg | msg in v.network.sentMsgs && msg.DecideMsg?
   :: v.GetCoordinator(c).decision.WOSome?
 }
 
@@ -44,10 +44,10 @@ ghost predicate DecisionMsgsAgreeWithLeader2(c: Constants, v: Variables)
 }
 
 // If a participant has decided, then there must be a corresponding DecideMsg
-ghost predicate ParticipantsDecisionImpliesDecideMsg1(c: Constants, v: Variables) 
+ghost predicate ParticipantsDecisionImpliesDecideMsg1(c: Constants, v: Variables)
   requires v.WF(c)
 {
-  forall i | c.ValidParticipantId(i) && PartipantHasDecided(c, v, i) 
+  forall i | c.ValidParticipantId(i) && PartipantHasDecided(c, v, i)
   :: (ParticipantDecidedCommit(c, v, i) ==> DecideMsg(Commit) in v.network.sentMsgs)
 }
 

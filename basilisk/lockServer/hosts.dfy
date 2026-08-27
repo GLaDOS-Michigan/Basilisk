@@ -56,7 +56,7 @@ module ClientHost {
       case ReceiveStep => NextReceiveStep1(c, v, v', msgOps)
   }
 
-  ghost predicate NextReleaseStep(c: Constants, v: Variables, v': Variables, msgOps: MessageOps) 
+  ghost predicate NextReleaseStep(c: Constants, v: Variables, v': Variables, msgOps: MessageOps)
     requires v.WF(c)
   {
     && msgOps.send.Some?
@@ -64,7 +64,7 @@ module ClientHost {
     && SendRelease(c, v, v', msgOps.send.value)
   }
 
-  ghost predicate SendRelease(c: Constants, v: Variables, v': Variables, msg: Message) 
+  ghost predicate SendRelease(c: Constants, v: Variables, v': Variables, msg: Message)
     requires v.WF(c)
   {
     // Enabling conditions
@@ -166,7 +166,7 @@ module ServerHost {
       case ReceiveStep => NextReceiveStep2(c, v, v', msgOps)
   }
 
-  ghost predicate NextGrantStep(c: Constants, v: Variables, v': Variables, msgOps: MessageOps) 
+  ghost predicate NextGrantStep(c: Constants, v: Variables, v': Variables, msgOps: MessageOps)
     requires v.WF(c)
   {
     && msgOps.send.Some?
@@ -174,7 +174,7 @@ module ServerHost {
     && SendGrant(c, v, v', msgOps.send.value)
   }
 
-  ghost predicate SendGrant(c: Constants, v: Variables, v': Variables, msg: Message) 
+  ghost predicate SendGrant(c: Constants, v: Variables, v': Variables, msg: Message)
     requires v.WF(c)
   {
     // Enabling conditions

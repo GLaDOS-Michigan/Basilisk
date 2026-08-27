@@ -2,7 +2,7 @@ include "monotonicityInvariantsAutogen.dfy"
 include "messageInvariantsAutogen.dfy"
 
 module PaxosProof {
-  
+
 import opened Types
 import opened UtilitiesLibrary
 import opened MonotonicityLibrary
@@ -181,7 +181,7 @@ lemma SafetyProofBallotInductionStep(c: Constants, v: Variables, vb1: ValBal, vb
 
 // Corresponds to ChosenValImpliesPromiseQuorumSeesBal in manual proof
 lemma ChosenImpliesSeenByHigherPromiseQuorum(c: Constants, v: Variables, chosenVB: ValBal, promBal: LeaderId, promQ: set<Message>)
-returns (promMsg: Message) 
+returns (promMsg: Message)
   requires RegularInvs(c, v)
   requires Chosen(c, v.Last(), chosenVB)
   requires IsPromiseQuorum(c, v, promQ, promBal)
@@ -195,7 +195,7 @@ returns (promMsg: Message)
     - Chosen implies there are f+1 Accept messages for chosenVB. For each of these
       acceptor sources, there is some point in history that it accepted chosenVB.
 
-    - Promise quorum implies that f+1 acceptors promised promBal. For each of these 
+    - Promise quorum implies that f+1 acceptors promised promBal. For each of these
       acceptor sources, there is some point in history that it promised promBal.
 
     - For each acceptor in intersection, let j, i be the respective points in history.
@@ -219,7 +219,7 @@ returns (promMsg: Message)
   ChosenImpliesSeenByHigherPromiseQuorumHelper(c, v, chosenVB, inMsg, promMsg, promBal, i, propMsg, accMsg, j);
 }
 
-lemma ChosenImpliesSeenByHigherPromiseQuorumHelper(c: Constants, v: Variables, chosenVB: ValBal, inMsg: Message, promMsg: Message, promBal: LeaderId, i: nat, propMsg: Message, accMsg: Message, j: nat) 
+lemma ChosenImpliesSeenByHigherPromiseQuorumHelper(c: Constants, v: Variables, chosenVB: ValBal, inMsg: Message, promMsg: Message, promBal: LeaderId, i: nat, propMsg: Message, accMsg: Message, j: nat)
   requires RegularInvs(c, v)
   requires IsPromiseMessage(v, promMsg)
   requires IsAcceptMessage(v, accMsg)
@@ -243,7 +243,7 @@ returns (accId: AcceptorId)
   requires ValidMessages(c, v)
   requires IsPromiseQuorum(c, v, promQ, promBal)
   requires IsAcceptQuorum(c, v, accQ, accVB)
-  ensures exists promise, accept :: 
+  ensures exists promise, accept ::
     && promise in promQ
     && accept in accQ
     && promise.acc == accId
@@ -258,10 +258,10 @@ returns (accId: AcceptorId)
   return commonAcc;
 }
 
-lemma AcceptorsFromPromiseSet(c: Constants, v: Variables, promSet: set<Message>, promBal: LeaderId) 
+lemma AcceptorsFromPromiseSet(c: Constants, v: Variables, promSet: set<Message>, promBal: LeaderId)
 returns (accs: set<AcceptorId>)
   requires IsPromiseSet(c, v, promSet, promBal)
-  ensures forall a | a in accs 
+  ensures forall a | a in accs
     :: (exists pr :: pr in promSet && pr.acc == a)
   ensures |accs| == |promSet|
 {
@@ -276,9 +276,9 @@ returns (accs: set<AcceptorId>)
 }
 
 lemma AcceptorsFromAcceptSet(c: Constants, v: Variables, accSet: set<Message>, vb: ValBal)
-returns (accs: set<AcceptorId>)  
+returns (accs: set<AcceptorId>)
   requires IsAcceptSet(c, v, accSet, vb)
-  ensures forall a | a in accs 
+  ensures forall a | a in accs
     :: (exists ac :: ac in accSet && ac.acc == a)
   ensures |accs| == |accSet|
 {
@@ -432,7 +432,7 @@ returns (promS: set<Message>)
   }
 }
 
-lemma PromiseMessageExistence(c: Constants, v: Variables, i: int, ldr: LeaderId, acc: AcceptorId) 
+lemma PromiseMessageExistence(c: Constants, v: Variables, i: int, ldr: LeaderId, acc: AcceptorId)
   returns (promiseMsg : Message)
   requires v.WF(c)
   requires ValidHistory(c, v)
@@ -445,7 +445,7 @@ lemma PromiseMessageExistence(c: Constants, v: Variables, i: int, ldr: LeaderId,
             && promiseMsg in v.network.sentMsgs
             && promiseMsg.bal == ldr
             && promiseMsg.acc == acc
-            && (promiseMsg.vbOpt.Some? ==> 
+            && (promiseMsg.vbOpt.Some? ==>
                 && v.History(i).leaders[ldr].highestHeardBallot.MNSome?
                 && promiseMsg.vbOpt.value.b <= v.History(i).leaders[ldr].highestHeardBallot.value
             )
@@ -455,7 +455,7 @@ lemma PromiseMessageExistence(c: Constants, v: Variables, i: int, ldr: LeaderId,
   promiseMsg := m;
 }
 
-lemma ChosenImpliesProposed(c: Constants, v: Variables, i: nat, vb: ValBal) 
+lemma ChosenImpliesProposed(c: Constants, v: Variables, i: nat, vb: ValBal)
 returns (proposeMsg: Message)
   requires RegularInvs(c, v)
   requires v.ValidHistoryIdx(i)
@@ -472,7 +472,7 @@ returns (proposeMsg: Message)
   return prop;
 }
 
-lemma LearnerValidReceivedAccepts(c: Constants, v: Variables, i: nat, lnr: LearnerId) 
+lemma LearnerValidReceivedAccepts(c: Constants, v: Variables, i: nat, lnr: LearnerId)
   requires RegularInvs(c, v)
   requires v.ValidHistoryIdx(i)
   requires c.ValidLearnerIdx(lnr)
@@ -489,7 +489,7 @@ lemma LearnerValidReceivedAccepts(c: Constants, v: Variables, i: nat, lnr: Learn
   }
 }
 
-lemma LearnedImpliesQuorumOfAccepts(c: Constants, v: Variables, lnr: LearnerId, val: Value) 
+lemma LearnedImpliesQuorumOfAccepts(c: Constants, v: Variables, lnr: LearnerId, val: Value)
   requires RegularInvs(c, v)
   requires c.ValidLearnerIdx(lnr)
   requires v.Last().learners[lnr].HasLearnedValue(val)
@@ -554,11 +554,11 @@ ghost predicate IsAcceptorQuorum(c: Constants, quorum: set<AcceptorId>) {
 ghost predicate AtMostOneChosenVal(c: Constants, v: Variables)
   requires v.WF(c)
 {
-  forall vb1, vb2 | 
+  forall vb1, vb2 |
     && Chosen(c, v.Last(), vb1)
     && Chosen(c, v.Last(), vb2)
-  :: 
-    && c.ValidLeaderIdx(vb1.b) 
+  ::
+    && c.ValidLeaderIdx(vb1.b)
     && c.ValidLeaderIdx(vb2.b)
     && vb1.v == vb2.v
 }
@@ -578,7 +578,7 @@ ghost predicate IsPromiseMessage(v: Variables, m: Message) {
   && m in v.network.sentMsgs
 }
 
-ghost predicate {:opaque} MessageSetDistinctAccs(mset: set<Message>) 
+ghost predicate {:opaque} MessageSetDistinctAccs(mset: set<Message>)
   requires forall m | m in mset :: m.Promise? || m.Accept?
 {
   forall m1, m2 | m1 in mset && m2 in mset && m1.acc == m2.acc
@@ -600,7 +600,7 @@ ghost predicate IsPromiseQuorum(c: Constants, v: Variables, quorum: set<Message>
 ghost predicate WinningPromiseMessageInQuorum(c: Constants, v: Variables, pset: set<Message>, qbal: LeaderId, hsvb: ValBal, m: Message)
   requires IsPromiseSet(c, v, pset, qbal)
 {
-    && m in pset 
+    && m in pset
     && m.vbOpt == Some(hsvb)
     && (forall other | other in pset  && other.vbOpt.Some?
         :: other.vbOpt.value.b <= hsvb.b)
@@ -630,7 +630,7 @@ ghost predicate PromiseSetEmptyVB(c: Constants, v: Variables, pset: set<Message>
   forall m | m in pset :: m.vbOpt == None
 }
 
-ghost predicate LeaderPromiseSetProperties(c: Constants, v: Variables, i: nat, idx: LeaderId, promS: set<Message>) 
+ghost predicate LeaderPromiseSetProperties(c: Constants, v: Variables, i: nat, idx: LeaderId, promS: set<Message>)
   requires v.WF(c)
   requires v.ValidHistoryIdx(i)
   requires c.ValidLeaderIdx(idx)

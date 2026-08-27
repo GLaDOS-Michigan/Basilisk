@@ -69,7 +69,7 @@ module ThreePCInvariantProof {
                 0 <= hostId < |c.participants| && GetParticipantPreference(c, hostId) == No )
     }
 
-    lemma InvImpliesLeaderTallyReflectsPreferences(c: Constants, v: Variables) 
+    lemma InvImpliesLeaderTallyReflectsPreferences(c: Constants, v: Variables)
         requires RegularInvs(c, v)
         ensures LeaderTallyReflectsPreferences(c, v)
     {
@@ -90,7 +90,7 @@ module ThreePCInvariantProof {
 
     lemma AC1Proof(c: Constants, v: Variables)
         requires RegularInvs(c, v)
-        ensures SafetyAC1(c, v)   
+        ensures SafetyAC1(c, v)
     {
         forall idx: HostId | c.ValidParticipantId(idx) && PartipantHasDecided(c, v.Last(), idx)
         ensures v.Last().GetCoordinator(c).decision == v.Last().participants[idx].decision {
@@ -126,7 +126,7 @@ lemma AC3Proof(c: Constants, v: Variables)
         requires RegularInvs(c, v)
         ensures SafetyAC4(c, v)
     {
-        forall pidx: nat | c.ValidParticipantId(pidx) && PartipantHasDecided(c, v.Last(), pidx) && AllPreferYes(c) 
+        forall pidx: nat | c.ValidParticipantId(pidx) && PartipantHasDecided(c, v.Last(), pidx) && AllPreferYes(c)
         ensures ParticipantDecidedCommit(c, v.Last(), pidx) {
             if !ParticipantDecidedCommit(c, v.Last(), pidx) {
             reveal_ValidHistory();
@@ -166,7 +166,7 @@ lemma AC3Proof(c: Constants, v: Variables)
             var _, msg := ReceiveVoteYesStepSkolemization(c, v, j, 0, id);  // witness
         }
 
-        forall id | 0 <= id < |c.participants| 
+        forall id | 0 <= id < |c.participants|
         ensures id in v.Last().GetCoordinator(c).yesVotes.s {
             if id !in v.History(j).GetCoordinator(c).yesVotes.s {
                 SetLemma(v.History(j).GetCoordinator(c).yesVotes.s, id, |c.participants|);
@@ -177,13 +177,13 @@ lemma AC3Proof(c: Constants, v: Variables)
         }
 
 
-        
+
 
 
 
     }
 
-    lemma SetLemma(S: set<HostId>, e: HostId, size: int) 
+    lemma SetLemma(S: set<HostId>, e: HostId, size: int)
         requires 0 <= e < size
         requires forall x | x in S :: 0 <= x < size
         requires e !in S

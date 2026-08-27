@@ -18,12 +18,12 @@ module Host {
     nominee: MonotonicWriteOnceOption<HostId>,   // monotonic option
     isLeader: bool                      // am I the leader?
   ) {
-    ghost predicate HasVoteFrom(voter: HostId) 
+    ghost predicate HasVoteFrom(voter: HostId)
     {
       voter in receivedVotes
     }
 
-    ghost predicate Nominates(h: HostId) 
+    ghost predicate Nominates(h: HostId)
     {
       nominee == WOSome(h)
     }
@@ -54,12 +54,12 @@ module Host {
   }
 
   datatype Step =
-    NominateSelfStep() 
+    NominateSelfStep()
     | SendVoteReqStep()
-    | RecvVoteReqStep() 
+    | RecvVoteReqStep()
     | SendVoteStep()
     | RecvVoteStep()
-    | VictoryStep() 
+    | VictoryStep()
     | StutterStep()
 
   ghost predicate NextStep(c: Constants, v: Variables, v': Variables, step: Step, msgOps: MessageOps)
@@ -71,7 +71,7 @@ module Host {
       case SendVoteStep => NextHostSendVoteStep(c, v, v', msgOps)
       case RecvVoteStep => NextHostRecvVoteStep(c, v, v', msgOps)
       case VictoryStep => NextVictoryStep(c, v, v', msgOps)
-      case StutterStep => 
+      case StutterStep =>
           && v == v'
           && msgOps.send == None
           && msgOps.recv == None

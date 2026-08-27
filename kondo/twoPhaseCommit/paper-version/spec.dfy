@@ -38,27 +38,27 @@ module Obligations {
   ***************************************************************************************/
 
 
-  ghost predicate PartipantHasDecided(c: Constants, v: Variables, pidx: HostId) 
+  ghost predicate PartipantHasDecided(c: Constants, v: Variables, pidx: HostId)
     requires v.WF(c)
     requires c.ValidParticipantId(pidx)
   {
     v.participants[pidx].decision.WOSome?
   }
 
-  ghost predicate ParticipantDecidedCommit(c: Constants, v: Variables, pidx: HostId) 
+  ghost predicate ParticipantDecidedCommit(c: Constants, v: Variables, pidx: HostId)
     requires v.WF(c)
     requires c.ValidParticipantId(pidx)
   {
     v.participants[pidx].decision == WOSome(Commit)
   }
 
-  ghost predicate CoordinatorHasDecided(c: Constants, v: Variables) 
+  ghost predicate CoordinatorHasDecided(c: Constants, v: Variables)
     requires v.WF(c)
   {
     v.GetCoordinator(c).decision.WOSome?
   }
 
-  ghost predicate CoordinatorDecidedCommit(c: Constants, v: Variables) 
+  ghost predicate CoordinatorDecidedCommit(c: Constants, v: Variables)
     requires v.WF(c)
   {
     v.GetCoordinator(c).decision == WOSome(Commit)
@@ -71,7 +71,7 @@ module Obligations {
     c.participants[i].preference
   }
 
-  ghost predicate AllPreferYes(c: Constants) 
+  ghost predicate AllPreferYes(c: Constants)
     requires c.WF()
   {
     forall j: HostId | c.ValidParticipantId(j) :: c.participants[j].preference == Yes

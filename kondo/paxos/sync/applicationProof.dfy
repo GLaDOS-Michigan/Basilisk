@@ -1,7 +1,7 @@
 include "spec.dfy"
 
 module PaxosProof {
-  
+
 import opened Types
 import opened UtilitiesLibrary
 import opened System
@@ -31,7 +31,7 @@ ghost predicate LearnerValidReceivedAccepts(c: Constants, v: Variables)
     c.ValidAcceptorIdx(e)
 }
 
-ghost predicate LearnerReceivedAcceptImpliesProposed(c: Constants, v: Variables) 
+ghost predicate LearnerReceivedAcceptImpliesProposed(c: Constants, v: Variables)
   requires v.WF(c)
 {
   forall lnr:LearnerId, vb:ValBal |
@@ -64,21 +64,21 @@ ghost predicate LearnerReceivedAcceptImpliesAccepted(c: Constants, v: Variables)
     && vb in v.learners[lnr].receivedAccepts.m
     && acc in v.learners[lnr].receivedAccepts.m[vb]
   ::
-    v.acceptors[acc].HasAcceptedAtLeastBal(vb.b) 
+    v.acceptors[acc].HasAcceptedAtLeastBal(vb.b)
 }
 
 // Acceptor's fields all host valid leader ballots
-ghost predicate AcceptorValidPromisedAndAccepted(c: Constants, v:Variables) 
+ghost predicate AcceptorValidPromisedAndAccepted(c: Constants, v:Variables)
   requires v.WF(c)
 {
-  forall acc: AcceptorId | 
-    && c.ValidAcceptorIdx(acc) 
-    && v.acceptors[acc].acceptedVB.MVBSome? 
-  :: 
+  forall acc: AcceptorId |
+    && c.ValidAcceptorIdx(acc)
+    && v.acceptors[acc].acceptedVB.MVBSome?
+  ::
     c.ValidLeaderIdx(v.acceptors[acc].acceptedVB.value.b)
 }
 
-ghost predicate AcceptorAcceptedImpliesProposed(c: Constants, v: Variables) 
+ghost predicate AcceptorAcceptedImpliesProposed(c: Constants, v: Variables)
   requires v.WF(c)
   requires AcceptorValidPromisedAndAccepted(c, v)
 {
@@ -102,22 +102,22 @@ ghost predicate LeaderValidReceivedPromises(c: Constants, v: Variables)
 }
 
 // For all leaders, its highestHeardBallot is upper bounded by its own ballot
-ghost predicate LeaderHighestHeardUpperBound(c: Constants, v: Variables) 
+ghost predicate LeaderHighestHeardUpperBound(c: Constants, v: Variables)
   requires v.WF(c)
 {
-  forall ldr:LeaderId | 
+  forall ldr:LeaderId |
     && c.ValidLeaderIdx(ldr)
     && v.leaders[ldr].highestHeardBallot.MNSome?
-  :: 
+  ::
     v.leaders[ldr].highestHeardBallot.value < ldr
 }
 
-// If a leader has a highestHeardBallot B, then its value has been proposed by the leader 
+// If a leader has a highestHeardBallot B, then its value has been proposed by the leader
 // with ballot B
-ghost predicate LeaderHearedImpliesProposed(c: Constants, v: Variables) 
+ghost predicate LeaderHearedImpliesProposed(c: Constants, v: Variables)
   requires v.WF(c)
 {
-  forall ldr:LeaderId | 
+  forall ldr:LeaderId |
     && c.ValidLeaderIdx(ldr)
     && v.leaders[ldr].highestHeardBallot.MNSome?
     && c.ValidLeaderIdx(v.leaders[ldr].highestHeardBallot.value)
@@ -146,7 +146,7 @@ ghost predicate LeaderReceivedPromisesImpliesAcceptorState(c: Constants, v: Vari
 ghost predicate LeaderHighestHeardToPromisedRangeHasNoAccepts(c: Constants, v: Variables)
   requires v.WF(c)
 {
-  forall ldr, acc, lnr, vb:ValBal | 
+  forall ldr, acc, lnr, vb:ValBal |
     && c.ValidLeaderIdx(ldr)
     && c.ValidAcceptorIdx(acc)
     && c.ValidLearnerIdx(lnr)
@@ -158,10 +158,10 @@ ghost predicate LeaderHighestHeardToPromisedRangeHasNoAccepts(c: Constants, v: V
     acc !in v.learners[lnr].receivedAccepts.m[vb]
 }
 
-ghost predicate ChosenValImpliesAcceptorOnlyAcceptsVal(c: Constants, v: Variables) 
+ghost predicate ChosenValImpliesAcceptorOnlyAcceptsVal(c: Constants, v: Variables)
   requires v.WF(c)
 {
-  forall vb, acc:AcceptorId | 
+  forall vb, acc:AcceptorId |
     && Chosen(c, v, vb)
     && c.ValidAcceptorIdx(acc)
     && v.acceptors[acc].acceptedVB.MVBSome?
@@ -170,12 +170,12 @@ ghost predicate ChosenValImpliesAcceptorOnlyAcceptsVal(c: Constants, v: Variable
      v.acceptors[acc].acceptedVB.value.v == vb.v
 }
 
-// If vb is chosen, then for all leaders > vb.b and ready to propose, they must have highest 
+// If vb is chosen, then for all leaders > vb.b and ready to propose, they must have highest
 // heard >= b
 ghost predicate ChosenImpliesProposingLeaderHearsChosenBallot(c: Constants, v: Variables)
   requires v.WF(c)
 {
-  forall vb, ldrBal:LeaderId | 
+  forall vb, ldrBal:LeaderId |
     && Chosen(c, v, vb)
     && c.ValidLeaderIdx(ldrBal)
     && vb.b < ldrBal
@@ -185,10 +185,10 @@ ghost predicate ChosenImpliesProposingLeaderHearsChosenBallot(c: Constants, v: V
 }
 
 // If vb is chosen, then for all leaders has a highest heard >= vb.b, the value must be vb.v
-ghost predicate ChosenValImpliesLeaderOnlyHearsVal(c: Constants, v: Variables) 
+ghost predicate ChosenValImpliesLeaderOnlyHearsVal(c: Constants, v: Variables)
   requires v.WF(c)
 {
-  forall vb, ldrBal:LeaderId | 
+  forall vb, ldrBal:LeaderId |
     && Chosen(c, v, vb)
     && c.ValidLeaderIdx(ldrBal)
     && v.leaders[ldrBal].highestHeardBallot.MNSome?
@@ -288,7 +288,7 @@ lemma InvNextLearnedImpliesQuorumOfAccepts(c: Constants, v: Variables, v': Varia
   ensures LearnedImpliesQuorumOfAccepts(c, v')
 {
   forall lnr:LearnerId, val:Value |
-    && c.ValidLearnerIdx(lnr) 
+    && c.ValidLearnerIdx(lnr)
     && v'.learners[lnr].HasLearnedValue(val)
   ensures
     exists b: LeaderId ::
@@ -365,7 +365,7 @@ lemma InvNextLeaderHighestHeardToPromisedRangeHasNoAccepts(c: Constants, v: Vari
   ensures LeaderHighestHeardToPromisedRangeHasNoAccepts(c, v')
 {}
 
-lemma InvNextChosenImpliesProposingLeaderHearsChosenBallot(c: Constants, v: Variables, v': Variables) 
+lemma InvNextChosenImpliesProposingLeaderHearsChosenBallot(c: Constants, v: Variables, v': Variables)
   requires Inv(c, v)
   requires Next(c, v, v')
   requires LearnerReceivedAcceptImpliesAccepted(c, v')
@@ -390,10 +390,10 @@ lemma InvNextChosenImpliesProposingLeaderHearsChosenBallotP1bStep(c: Constants, 
   ensures ChosenImpliesProposingLeaderHearsChosenBallot(c, v')
 {
   NewChosenOnlyInP2bStep(c, v, v', sysStep);
-  forall vb, ldr:LeaderId | 
+  forall vb, ldr:LeaderId |
     && Chosen(c, v', vb)
     && c.ValidLeaderIdx(ldr)
-    && vb.b < ldr 
+    && vb.b < ldr
     && v'.LeaderCanPropose(c, ldr)
   ensures
     v'.leaders[ldr].HeardAtLeast(vb.b)
@@ -408,7 +408,7 @@ lemma InvNextChosenImpliesProposingLeaderHearsChosenBallotP1bStep(c: Constants, 
         if acc !in choosingAccs {
           // In this case, by quorum intersection, acc must already be in ldr.receivePromises
           // First prove that choosingAccs !! v.leaders[ldr].ReceivedPromises()
-          forall a | a in choosingAccs 
+          forall a | a in choosingAccs
           ensures a !in v.leaders[ldr].ReceivedPromises()
           {
             if !v.acceptors[a].HasAcceptedAtMostBal(ldr) && a in v.leaders[ldr].ReceivedPromises() {
@@ -419,7 +419,7 @@ lemma InvNextChosenImpliesProposingLeaderHearsChosenBallotP1bStep(c: Constants, 
           var allAccs := GetAcceptorSet(c, v);
           var e := QuorumIntersection(allAccs, choosingAccs, v.leaders[ldr].ReceivedPromises() + {acc});
           assert false;
-        }        
+        }
       }
     }
   }
@@ -435,10 +435,10 @@ lemma InvNextChosenImpliesProposingLeaderHearsChosenBallotP2bStep(c: Constants, 
   requires NextStep(c, v, v', sysStep)
   ensures ChosenImpliesProposingLeaderHearsChosenBallot(c, v')
 {
-  forall vb, ldr:LeaderId | 
+  forall vb, ldr:LeaderId |
     && Chosen(c, v', vb)
     && c.ValidLeaderIdx(ldr)
-    && vb.b < ldr 
+    && vb.b < ldr
     && v'.LeaderCanPropose(c, ldr)
   ensures
     v'.leaders[ldr].HeardAtLeast(vb.b)
@@ -466,7 +466,7 @@ lemma InvNextChosenValImpliesAcceptorOnlyAcceptsVal(c: Constants, v: Variables, 
   requires ChosenValImpliesAcceptorOnlyAcceptsVal(c, v)
   requires Next(c, v, v')
   requires AcceptorValidPromisedAndAccepted(c, v')  // prereq for AcceptorAcceptedImpliesProposed
-  
+
   // prereqs for LeaderHearsDifferentValueFromChosenImpliesFalse
   requires AcceptorAcceptedImpliesProposed(c, v')
   requires OneValuePerBallotLeaderAndLearners(c, v')
@@ -486,10 +486,10 @@ lemma InvNextChosenValImpliesAcceptorOnlyAcceptsVal(c: Constants, v: Variables, 
         && Chosen(c, v', vb)
         && c.ValidAcceptorIdx(acc)
         && v'.acceptors[acc].acceptedVB.MVBSome?
-        && vb.b <= v'.acceptors[acc].acceptedVB.value.b 
+        && vb.b <= v'.acceptors[acc].acceptedVB.value.b
         // This is the contradiction
         && v'.acceptors[acc].acceptedVB.value.v != vb.v;
-      
+
       // Then there is a leader that proposed the accepted value, by AcceptorAcceptedImpliesProposed
       var ldr := v'.acceptors[acc].acceptedVB.value.b;
       LeaderHearsDifferentValueFromChosenImpliesFalse(c, v', ldr, vb);
@@ -537,14 +537,14 @@ ghost predicate IsAcceptorQuorum(c: Constants, quorum: set<AcceptorId>) {
 }
 
 // A learner holds an accept quorum for vb
-ghost predicate Chosen(c: Constants, v: Variables, vb: ValBal) 
+ghost predicate Chosen(c: Constants, v: Variables, vb: ValBal)
   requires v.WF(c)
 {
   exists lnr:LearnerId :: ChosenAtLearner(c, v, vb, lnr)
 }
 
 // Learner lnr witnessed a vb being chosen
-ghost predicate ChosenAtLearner(c: Constants, v: Variables, vb: ValBal, lnr:LearnerId) 
+ghost predicate ChosenAtLearner(c: Constants, v: Variables, vb: ValBal, lnr:LearnerId)
   requires v.WF(c)
 {
   && c.ValidLearnerIdx(lnr)
@@ -553,11 +553,11 @@ ghost predicate ChosenAtLearner(c: Constants, v: Variables, vb: ValBal, lnr:Lear
 }
 
 // At most one value can become Chosen
-ghost predicate AtMostOneChosenVal(c: Constants, v: Variables) 
+ghost predicate AtMostOneChosenVal(c: Constants, v: Variables)
   requires v.WF(c)
 {
-  forall vb1, vb2 | Chosen(c, v, vb1) && Chosen(c, v, vb2) 
-  :: 
+  forall vb1, vb2 | Chosen(c, v, vb1) && Chosen(c, v, vb2)
+  ::
     && c.ValidLeaderIdx(vb1.b)
     && c.ValidLeaderIdx(vb2.b)
     && vb1.v == vb2.v
@@ -581,9 +581,9 @@ lemma LeaderHearsDifferentValueFromChosenImpliesFalse(c: Constants, v: Variables
   requires ChosenImpliesProposingLeaderHearsChosenBallot(c, v)
   ensures false
 {
-  /* 
-    Suppose leader L hears a value v' != vb.v. Then by LeaderHearedImpliesProposed, another leader L' 
-    such that vb.v <= L' < L must have proposed v', 
+  /*
+    Suppose leader L hears a value v' != vb.v. Then by LeaderHearedImpliesProposed, another leader L'
+    such that vb.v <= L' < L must have proposed v',
     Then do recursion all the way down.
   */
   var ldr' := v.leaders[ldr].highestHeardBallot.value;
@@ -621,7 +621,7 @@ lemma AtMostOneChosenImpliesSafety(c: Constants, v: Variables)
 {
   // Proof by contradiction
   if !Safety(c, v) {
-    var l1, l2 :| 
+    var l1, l2 :|
         && c.ValidLearnerIdx(l1)
         && c.ValidLearnerIdx(l2)
         && v.learners[l1].learned.Some?
@@ -634,8 +634,8 @@ lemma AtMostOneChosenImpliesSafety(c: Constants, v: Variables)
   }
 }
 
-// Lemma: The only system step in which a new vb can be chosen is a P2bStep 
-lemma NewChosenOnlyInP2bStep(c: Constants, v: Variables, v': Variables, sysStep: Step) 
+// Lemma: The only system step in which a new vb can be chosen is a P2bStep
+lemma NewChosenOnlyInP2bStep(c: Constants, v: Variables, v': Variables, sysStep: Step)
   requires v.WF(c)
   requires Next(c, v, v')
   requires NextStep(c, v, v', sysStep)
@@ -657,10 +657,10 @@ returns (supportingAccs: set<AcceptorId>)
   requires Chosen(c, v, vb)
   requires LearnerReceivedAcceptImpliesAccepted(c, v)
   ensures |supportingAccs| >= c.f+1
-  ensures forall a | a in supportingAccs :: 
+  ensures forall a | a in supportingAccs ::
     && c.ValidAcceptorIdx(a)
     && v.acceptors[a].HasAcceptedAtLeastBal(vb.b)
-  ensures exists lnr :: 
+  ensures exists lnr ::
     && c.ValidLearnerIdx(lnr)
     && vb in v.learners[lnr].receivedAccepts.m
     && supportingAccs <= v.learners[lnr].receivedAccepts.m[vb]

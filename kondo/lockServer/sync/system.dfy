@@ -48,13 +48,13 @@ ghost predicate Init(c: Constants, v: Variables) {
     && ServerHost.GroupInit(c.server, v.server, allClients)
 }
 
-datatype Step = 
+datatype Step =
   | Grant(client: HostId, transmit: Transmit)
   | Release(client: HostId, transmit: Transmit)
   | StutterStep()
 
 // Server gives lock to client
-ghost predicate NextGrantStep(c: Constants, v: Variables, v': Variables, client: HostId, transmit: Transmit) 
+ghost predicate NextGrantStep(c: Constants, v: Variables, v': Variables, client: HostId, transmit: Transmit)
   requires v.WF(c) && v'.WF(c)
 {
   // Server action
@@ -69,7 +69,7 @@ ghost predicate NextGrantStep(c: Constants, v: Variables, v': Variables, client:
 }
 
 // Client releases lock back to server
-ghost predicate NextReleaseStep(c: Constants, v: Variables, v': Variables, client: HostId, transmit: Transmit) 
+ghost predicate NextReleaseStep(c: Constants, v: Variables, v': Variables, client: HostId, transmit: Transmit)
   requires v.WF(c) && v'.WF(c)
 {
   // Client action

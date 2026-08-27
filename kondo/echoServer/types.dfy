@@ -4,7 +4,7 @@ module Types {
   import opened UtilitiesLibrary
 
   type ClientId = nat
-  
+
   datatype Request = Req(clientId: ClientId, reqId: nat)
 
   datatype Message =

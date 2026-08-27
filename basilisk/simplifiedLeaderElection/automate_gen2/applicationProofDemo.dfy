@@ -56,9 +56,9 @@ lemma InvInductive(c: Constants, v: Variables, v': Variables)
 
 // BEGIN SAFETY PROOF
 
-lemma RegInvsYieldIsLeaderImpliesHasQuorum(c: Constants, v: Variables) 
+lemma RegInvsYieldIsLeaderImpliesHasQuorum(c: Constants, v: Variables)
   requires RegularInvs(c, v)
-  ensures forall h: nat | c.ValidHostId(h) && v.Last().IsLeader(c, h) :: 
+  ensures forall h: nat | c.ValidHostId(h) && v.Last().IsLeader(c, h) ::
           SetIsQuorum(c.hosts[h].clusterSize, v.Last().hosts[h].receivedVotes.Value())
 {
   forall h: nat | c.ValidHostId(h) && v.Last().IsLeader(c, h)

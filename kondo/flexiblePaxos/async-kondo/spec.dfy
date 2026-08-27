@@ -8,7 +8,7 @@ module Obligations {
   ghost predicate Safety(c: Constants, v: Variables)
     requires v.WF(c)
   {
-    forall l1, l2 
+    forall l1, l2
     {:trigger v.Last().learners[l1].learned == v.Last().learners[l2].learned}
     |
       && c.ValidLearnerIdx(l1)

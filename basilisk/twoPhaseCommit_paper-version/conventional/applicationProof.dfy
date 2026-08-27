@@ -11,8 +11,8 @@ ghost predicate LeaderVotesValid(c: Constants, v: Variables)
   requires v.WF(c)
   decreases c, v
 {
-  forall hostId: int| hostId in v.GetCoordinator(c).yesVotes.s 
-  :: 
+  forall hostId: int| hostId in v.GetCoordinator(c).yesVotes.s
+  ::
   0 <= hostId < |c.participants|
 }
 
@@ -35,7 +35,7 @@ ghost predicate CommitImpliesYesVotesFull(c: Constants, v: Variables)
 ghost predicate ParticipantDecisionReflectLeader(c: Constants, v: Variables)
   requires v.WF(c)
 {
-  forall id | c.ValidParticipantId(id) && ParticipantDecidedCommit(c, v, id) 
+  forall id | c.ValidParticipantId(id) && ParticipantDecidedCommit(c, v, id)
   :: CoordinatorDecidedCommit(c, v)
 }
 
@@ -90,7 +90,7 @@ lemma InvInductive(c: Constants, v: Variables, v': Variables)
 *                                   InvNext Proofs                                     *
 ***************************************************************************************/
 
-lemma InvNextLeaderVotesValid(c: Constants, v: Variables, v': Variables) 
+lemma InvNextLeaderVotesValid(c: Constants, v: Variables, v': Variables)
   requires Inv(c, v)
   requires Next(c, v, v')
   ensures LeaderVotesValid(c, v')
@@ -159,7 +159,7 @@ lemma YesVotesContainsAllParticipantsWhenFull(c: Constants, v: Variables)
   requires ApplicationInv(c, v)
   requires |v.GetCoordinator(c).yesVotes.s| >= |c.participants|
   ensures forall id: int
- 
+
  | 0 <= id < |c.participants| :: id in v.GetCoordinator(c).yesVotes.s
   decreases c, v
 {
@@ -179,7 +179,7 @@ lemma YesVotesContainsAllParticipantsWhenFull(c: Constants, v: Variables)
 lemma SetLemma(S: set<HostId>, e: HostId, size: int)
   requires 0 <= e < size
   requires forall x: int
- 
+
  | x in S :: 0 <= x && x < size
   requires e !in S
   ensures |S| < size

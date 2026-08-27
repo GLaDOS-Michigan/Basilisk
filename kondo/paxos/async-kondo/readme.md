@@ -19,7 +19,7 @@ Generate async draft proof:
 The following lemmas are manually added or modified:
 
 ```dafny
-lemma InvNextLearnedImpliesQuorumOfAccepts(c: Constants, v: Variables, v': Variables) 
+lemma InvNextLearnedImpliesQuorumOfAccepts(c: Constants, v: Variables, v': Variables)
   requires v.WF(c)
   requires ValidMessages(c, v)
   requires LearnerValidReceivedAccepts(c, v)
@@ -53,8 +53,8 @@ lemma InvNextLeaderHighestHeardToPromisedRangeHasNoAccepts(c: Constants, v: Vari
   requires Inv(c, v)
   requires Next(c, v, v')
   ensures LeaderHighestHeardToPromisedRangeHasNoAccepts(c, v')
-{ 
-  forall ldr, acc, lnr, vb:ValBal, i | 
+{
+  forall ldr, acc, lnr, vb:ValBal, i |
     && v'.ValidHistoryIdx(i)
     && c.ValidLeaderIdx(ldr)
     && c.ValidAcceptorIdx(acc)
@@ -75,7 +75,7 @@ lemma InvNextLeaderHighestHeardToPromisedRangeHasNoAccepts(c: Constants, v: Vari
   }
 }
 
-lemma AcceptMessageExistence(c: Constants, v: Variables, i: int, lnr:LearnerId, vb: ValBal, acc: AcceptorId) 
+lemma AcceptMessageExistence(c: Constants, v: Variables, i: int, lnr:LearnerId, vb: ValBal, acc: AcceptorId)
   returns (acceptMsg : Message)
   requires v.WF(c)
   requires v.ValidHistoryIdx(i)
@@ -90,7 +90,7 @@ lemma AcceptMessageExistence(c: Constants, v: Variables, i: int, lnr:LearnerId, 
   acceptMsg := Accept(vb, acc);
 }
 
-lemma PromiseMessageExistence(c: Constants, v: Variables, i: int, ldr: LeaderId, acc: AcceptorId) 
+lemma PromiseMessageExistence(c: Constants, v: Variables, i: int, ldr: LeaderId, acc: AcceptorId)
   returns (promiseMsg : Message)
   requires v.WF(c)
   requires v.ValidHistoryIdx(i)
@@ -102,7 +102,7 @@ lemma PromiseMessageExistence(c: Constants, v: Variables, i: int, ldr: LeaderId,
             && promiseMsg in v.network.sentMsgs
             && promiseMsg.bal == ldr
             && promiseMsg.acc == acc
-            && (promiseMsg.vbOpt.Some? ==> 
+            && (promiseMsg.vbOpt.Some? ==>
                 && v.History(i).leaders[ldr].highestHeardBallot.MNSome?
                 && promiseMsg.vbOpt.value.b <= v.History(i).leaders[ldr].highestHeardBallot.value
             )
@@ -112,20 +112,20 @@ lemma PromiseMessageExistence(c: Constants, v: Variables, i: int, ldr: LeaderId,
                 && promiseMsg in v.network.sentMsgs
                 && promiseMsg.bal == ldr
                 && promiseMsg.acc == acc
-                && (promiseMsg.vbOpt.Some? ==> 
+                && (promiseMsg.vbOpt.Some? ==>
                     && v.History(i).leaders[ldr].highestHeardBallot.MNSome?
                     && promiseMsg.vbOpt.value.b <= v.History(i).leaders[ldr].highestHeardBallot.value
                 );
 }
 
-lemma InvNextChosenImpliesProposingLeaderHearsChosenBallot(c: Constants, v: Variables, v': Variables) 
+lemma InvNextChosenImpliesProposingLeaderHearsChosenBallot(c: Constants, v: Variables, v': Variables)
   requires Inv(c, v)
   requires Next(c, v, v')
   requires LeaderHighestHeardToPromisedRangeHasNoAccepts(c, v')
   requires LearnerReceivedAcceptImpliesAccepted(c, v')
   ensures ChosenImpliesProposingLeaderHearsChosenBallot(c, v')
 {
-  forall vb, ldr:LeaderId, i | 
+  forall vb, ldr:LeaderId, i |
     && v'.ValidHistoryIdx(i)
     && Chosen(c, v'.History(i), vb)
     && c.ValidLeaderIdx(ldr)
@@ -156,8 +156,8 @@ lemma InvNextChosenImpliesProposingLeaderHearsChosenBallot(c: Constants, v: Vari
               var allAccs := GetAcceptorSet(c, v);
               var e := QuorumIntersection(allAccs, choosingAccs, h.leaders[ldr].ReceivedPromises() + {acc});
               assert false;
-            }      
-          }    
+            }
+          }
         }
       } else if dsStep.AcceptorHostStep? {
         NewChosenOnlyInLearnerStep(c, v, v', dsStep);
@@ -174,7 +174,7 @@ lemma InvNextChosenImpliesProposingLeaderHearsChosenBallot(c: Constants, v: Vari
               var allAccs := GetAcceptorSet(c, v);
               var e := QuorumIntersection(allAccs, choosingAccs, v.Last().leaders[ldr].ReceivedPromises());
               assert false;
-            } 
+            }
           } else {
             assert !ChosenAtLearner(c, v.Last(), vb, lnr);  // trigger
           }
@@ -188,7 +188,7 @@ lemma InvNextChosenValImpliesAcceptorOnlyAcceptsVal(c: Constants, v: Variables, 
   requires Inv(c, v)
   requires Next(c, v, v')
   requires AcceptorValidPromisedAndAccepted(c, v')  // prereq for AcceptorAcceptedImpliesProposed
-  
+
   // prereqs for LeaderHearsDifferentValueFromChosenImpliesFalse
   requires AcceptorAcceptedImpliesProposed(c, v')
   requires OneValuePerBallotLeaderAndLearners(c, v')
@@ -199,7 +199,7 @@ lemma InvNextChosenValImpliesAcceptorOnlyAcceptsVal(c: Constants, v: Variables, 
   // post-condition
   ensures ChosenValImpliesAcceptorOnlyAcceptsVal(c, v')
 {
-  forall vb, acc:AcceptorId, i | 
+  forall vb, acc:AcceptorId, i |
     && v'.ValidHistoryIdx(i)
     && Chosen(c, v'.History(i), vb)
     && c.ValidAcceptorIdx(acc)
@@ -236,7 +236,7 @@ lemma InvNextChosenValImpliesLeaderOnlyHearsVal(c: Constants, v: Variables, v': 
   requires ChosenImpliesProposingLeaderHearsChosenBallot(c, v')
   ensures ChosenValImpliesLeaderOnlyHearsVal(c, v')
 {
-  forall vb, ldrBal:LeaderId, i | 
+  forall vb, ldrBal:LeaderId, i |
     && v'.ValidHistoryIdx(i)
     && Chosen(c, v'.History(i), vb)
     && c.ValidLeaderIdx(ldrBal)
@@ -260,14 +260,14 @@ lemma InvNextChosenValImpliesLeaderOnlyHearsVal(c: Constants, v: Variables, v': 
   }
 }
 
-lemma NewChosenOnlyInLearnerStep(c: Constants, v: Variables, v': Variables, dsStep: Step) 
+lemma NewChosenOnlyInLearnerStep(c: Constants, v: Variables, v': Variables, dsStep: Step)
   requires v.WF(c)
   requires Next(c, v, v')
   requires NextStep(c, v.Last(), v'.Last(), v.network, v'.network, dsStep)
   requires !dsStep.LearnerHostStep?
   ensures forall vb | Chosen(c, v'.Last(), vb) :: Chosen(c, v.Last(), vb)
 {
-  forall vb | Chosen(c, v'.Last(), vb) 
+  forall vb | Chosen(c, v'.Last(), vb)
   ensures Chosen(c, v'.history[|v'.history|-2], vb) {
     var lnr:LearnerId :| ChosenAtLearner(c, v'.Last(), vb, lnr);   // witness
     assert ChosenAtLearner(c, v.Last(), vb, lnr);                  // trigger

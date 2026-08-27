@@ -20,7 +20,7 @@ The following lemmas are manually added or modified:
 
 ```dafny
 // modified: 28 lines
-lemma InvNextLearnedImpliesQuorumOfAccepts(c: Constants, v: Variables, v': Variables) 
+lemma InvNextLearnedImpliesQuorumOfAccepts(c: Constants, v: Variables, v': Variables)
   requires v.WF(c)
   requires ValidMessages(c, v)  // From MessageInv
   requires ProtocolInv(c, v)
@@ -55,8 +55,8 @@ lemma InvNextLeaderHighestHeardToPromisedRangeHasNoAccepts(c: Constants, v: Vari
   requires Inv(c, v)
   requires Next(c, v, v')
   ensures LeaderHighestHeardToPromisedRangeHasNoAccepts(c, v')
-{ 
-  forall ldr, acc, lnr, vb:ValBal, i | 
+{
+  forall ldr, acc, lnr, vb:ValBal, i |
     && v'.ValidHistoryIdx(i)
     && c.ValidLeaderIdx(ldr)
     && c.ValidAcceptorIdx(acc)
@@ -104,7 +104,7 @@ lemma PromiseMessageExistence(c: Constants, v: Variables, i: int, ldr: LeaderId,
             && promiseMsg in v.network.sentMsgs
             && promiseMsg.bal == ldr
             && promiseMsg.acc == acc
-            && (promiseMsg.vbOpt.Some? ==> 
+            && (promiseMsg.vbOpt.Some? ==>
                 && v.History(i).leaders[ldr].highestHeardBallot.MNSome?
                 && promiseMsg.vbOpt.value.b <= v.History(i).leaders[ldr].highestHeardBallot.value
             )
@@ -114,21 +114,21 @@ lemma PromiseMessageExistence(c: Constants, v: Variables, i: int, ldr: LeaderId,
                 && promiseMsg in v.network.sentMsgs
                 && promiseMsg.bal == ldr
                 && promiseMsg.acc == acc
-                && (promiseMsg.vbOpt.Some? ==> 
+                && (promiseMsg.vbOpt.Some? ==>
                     && v.History(i).leaders[ldr].highestHeardBallot.MNSome?
                     && promiseMsg.vbOpt.value.b <= v.History(i).leaders[ldr].highestHeardBallot.value
                 );
 }
 
 // modified: 58 lines
-lemma {:timeLimitMultiplier 2} InvNextChosenImpliesProposingLeaderHearsChosenBallot(c: Constants, v: Variables, v': Variables) 
+lemma {:timeLimitMultiplier 2} InvNextChosenImpliesProposingLeaderHearsChosenBallot(c: Constants, v: Variables, v': Variables)
   requires Inv(c, v)
   requires Next(c, v, v')
   requires LeaderHighestHeardToPromisedRangeHasNoAccepts(c, v')
   requires LearnerReceivedAcceptImpliesAccepted(c, v')
   ensures ChosenImpliesProposingLeaderHearsChosenBallot(c, v')
 {
-  forall vb, ldr:LeaderId, i | 
+  forall vb, ldr:LeaderId, i |
     && v'.ValidHistoryIdx(i)
     && Chosen(c, v'.History(i), vb)
     && c.ValidLeaderIdx(ldr)
@@ -159,8 +159,8 @@ lemma {:timeLimitMultiplier 2} InvNextChosenImpliesProposingLeaderHearsChosenBal
               var allAccs := GetAcceptorSet(c, v);
               var e := QuorumIntersection(allAccs, choosingAccs, h.leaders[ldr].ReceivedPromises() + {acc});
               assert false;
-            }      
-          }    
+            }
+          }
         }
       } else if dsStep.AcceptorHostStep? {
         NewChosenOnlyInLearnerStep(c, v, v', dsStep);
@@ -177,7 +177,7 @@ lemma {:timeLimitMultiplier 2} InvNextChosenImpliesProposingLeaderHearsChosenBal
               var allAccs := GetAcceptorSet(c, v);
               var e := QuorumIntersection(allAccs, choosingAccs, v.Last().leaders[ldr].ReceivedPromises());
               assert false;
-            } 
+            }
           } else {
             assert !ChosenAtLearner(c, v.Last(), vb, lnr);  // trigger
           }
@@ -192,7 +192,7 @@ lemma InvNextChosenValImpliesAcceptorOnlyAcceptsVal(c: Constants, v: Variables, 
   requires Inv(c, v)
   requires Next(c, v, v')
   requires AcceptorValidPromisedAndAccepted(c, v')  // prereq for AcceptorAcceptedImpliesProposed
-  
+
   // prereqs for LeaderHearsDifferentValueFromChosenImpliesFalse
   requires AcceptorAcceptedImpliesProposed(c, v')
   requires OneValuePerBallotLeaderAndLearners(c, v')
@@ -203,7 +203,7 @@ lemma InvNextChosenValImpliesAcceptorOnlyAcceptsVal(c: Constants, v: Variables, 
   // post-condition
   ensures ChosenValImpliesAcceptorOnlyAcceptsVal(c, v')
 {
-  forall vb, acc:AcceptorId, i | 
+  forall vb, acc:AcceptorId, i |
     && v'.ValidHistoryIdx(i)
     && Chosen(c, v'.History(i), vb)
     && c.ValidAcceptorIdx(acc)
@@ -241,7 +241,7 @@ lemma InvNextChosenValImpliesLeaderOnlyHearsVal(c: Constants, v: Variables, v': 
   requires ChosenImpliesProposingLeaderHearsChosenBallot(c, v')
   ensures ChosenValImpliesLeaderOnlyHearsVal(c, v')
 {
-  forall vb, ldrBal:LeaderId, i | 
+  forall vb, ldrBal:LeaderId, i |
     && v'.ValidHistoryIdx(i)
     && Chosen(c, v'.History(i), vb)
     && c.ValidLeaderIdx(ldrBal)
@@ -266,15 +266,15 @@ lemma InvNextChosenValImpliesLeaderOnlyHearsVal(c: Constants, v: Variables, v': 
 }
 
 // modified: 13 lines
-// Lemma: The only system step in which a new vb can be chosen is a Learner step 
-lemma NewChosenOnlyInLearnerStep(c: Constants, v: Variables, v': Variables, dsStep: Step) 
+// Lemma: The only system step in which a new vb can be chosen is a Learner step
+lemma NewChosenOnlyInLearnerStep(c: Constants, v: Variables, v': Variables, dsStep: Step)
   requires v.WF(c)
   requires Next(c, v, v')
   requires NextStep(c, v.Last(), v'.Last(), v.network, v'.network, dsStep)
   requires !dsStep.LearnerHostStep?
   ensures forall vb | Chosen(c, v'.Last(), vb) :: Chosen(c, v.Last(), vb)
 {
-  forall vb | Chosen(c, v'.Last(), vb) 
+  forall vb | Chosen(c, v'.Last(), vb)
   ensures Chosen(c, v'.history[|v'.history|-2], vb) {
     var lnr:LearnerId :| ChosenAtLearner(c, v'.Last(), vb, lnr);   // witness
     assert ChosenAtLearner(c, v.Last(), vb, lnr);                  // trigger
@@ -285,7 +285,7 @@ lemma NewChosenOnlyInLearnerStep(c: Constants, v: Variables, v': Variables, dsSt
 lemma GetAcceptorSet(c: Constants, v: Variables) returns (accSet: set<AcceptorId>)
   requires v.WF(c)
   ensures forall a: int
-  
+
  :: c.ValidAcceptorIdx(a) <==> a in accSet
   ensures |accSet| == c.n
   decreases c, v

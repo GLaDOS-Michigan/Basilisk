@@ -24,7 +24,7 @@ module Obligations {
   {
     // auto triggers: {v.Last().participants[i]}, {PartipantHasDecided(c, v.Last(), i)}, {c.ValidParticipantId(i)}
     forall i: HostId
-    {:trigger v.Last().participants[i]} {:trigger PartipantHasDecided(c, v.Last(), i)} {:trigger c.ValidParticipantId(i)} 
+    {:trigger v.Last().participants[i]} {:trigger PartipantHasDecided(c, v.Last(), i)} {:trigger c.ValidParticipantId(i)}
     :: (c.ValidParticipantId(i) && PartipantHasDecided(c, v.Last(), i)
       ==> v.Last().GetCoordinator(c).decision == v.Last().participants[i].decision)
   }
@@ -52,7 +52,7 @@ module Obligations {
     requires v.WF(c)
   {
     (AllPreferYes(c) && CoordinatorHasDecided(c, v.Last()))
-    ==> 
+    ==>
     CoordinatorDecidedCommit(c, v.Last())
   }
 
@@ -70,40 +70,40 @@ module Obligations {
   ***************************************************************************************/
 
 
-  ghost predicate PartipantHasDecided(c: Constants, h: Hosts, pidx: HostId) 
+  ghost predicate PartipantHasDecided(c: Constants, h: Hosts, pidx: HostId)
     requires h.WF(c)
     requires c.ValidParticipantId(pidx)
   {
     h.participants[pidx].decision.WOSome?
   }
 
-  ghost predicate ParticipantDecidedCommit(c: Constants, h: Hosts, pidx: HostId) 
+  ghost predicate ParticipantDecidedCommit(c: Constants, h: Hosts, pidx: HostId)
     requires h.WF(c)
     requires c.ValidParticipantId(pidx)
   {
     h.participants[pidx].decision == WOSome(Commit)
   }
 
-  ghost predicate ParticipantDecidedAbort(c: Constants, h: Hosts, pidx: HostId) 
+  ghost predicate ParticipantDecidedAbort(c: Constants, h: Hosts, pidx: HostId)
     requires h.WF(c)
     requires c.ValidParticipantId(pidx)
   {
     h.participants[pidx].decision == WOSome(Abort)
   }
 
-  ghost predicate CoordinatorHasDecided(c: Constants, h: Hosts) 
+  ghost predicate CoordinatorHasDecided(c: Constants, h: Hosts)
     requires h.WF(c)
   {
     h.GetCoordinator(c).decision.WOSome?
   }
 
-  ghost predicate CoordinatorDecidedCommit(c: Constants, h: Hosts) 
+  ghost predicate CoordinatorDecidedCommit(c: Constants, h: Hosts)
     requires h.WF(c)
   {
     h.GetCoordinator(c).decision == WOSome(Commit)
   }
 
-  ghost predicate CoordinatorDecidedAbort(c: Constants, h: Hosts) 
+  ghost predicate CoordinatorDecidedAbort(c: Constants, h: Hosts)
     requires h.WF(c)
   {
     h.GetCoordinator(c).decision == WOSome(Abort)
@@ -116,7 +116,7 @@ module Obligations {
     c.participants[i].preference
   }
 
-  ghost predicate AllPreferYes(c: Constants) 
+  ghost predicate AllPreferYes(c: Constants)
     requires c.WF()
   {
     forall j: HostId | c.ValidParticipantId(j) :: c.participants[j].preference == Yes

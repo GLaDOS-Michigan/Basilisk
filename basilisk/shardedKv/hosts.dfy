@@ -51,11 +51,11 @@ module Host {
     && GroupWF(grp_c, grp_v)
     && (forall i | 0 <= i < |grp_c| :: Init(grp_c[i], grp_v[i]))
     // Hosts have disjoint live keys
-    && (forall k: UniqueKey, i, j | 
+    && (forall k: UniqueKey, i, j |
           && 0 <= i < |grp_c|
           && 0 <= j < |grp_c|
-          && grp_v[i].HasLiveKey(k) 
-          && grp_v[j].HasLiveKey(k) 
+          && grp_v[i].HasLiveKey(k)
+          && grp_v[j].HasLiveKey(k)
         :: i == j)
     // Each host have every key
     && (forall k: UniqueKey, i: HostId | 0 <= i < |grp_c| ::
@@ -81,7 +81,7 @@ module Host {
       case ReceiveStep => NextReceiveStep(c, v, v', msgOps)
   }
 
-  ghost predicate NextSendStep(c: Constants, v: Variables, v': Variables, msgOps: MessageOps) 
+  ghost predicate NextSendStep(c: Constants, v: Variables, v': Variables, msgOps: MessageOps)
     requires v.WF(c)
   {
     && msgOps.send.Some?
@@ -89,17 +89,17 @@ module Host {
     && SendReconf(c, v, v', msgOps.send.value)
   }
 
-  ghost predicate SendReconf(c: Constants, v: Variables, v': Variables, msg: Message) 
+  ghost predicate SendReconf(c: Constants, v: Variables, v': Variables, msg: Message)
     requires v.WF(c)
   {
     // Enabling conditions
-    && 0 < |v.myKeys| 
+    && 0 < |v.myKeys|
     && HostOwnsUniqueKey(c, v, v.nextKeyToSend)
     && v.nextDst in c.hostIds
     // Construct message
     && msg == Reconf(c.myId, v.nextDst, v.nextKeyToSend, v.myKeys[v.nextKeyToSend].version+1) // increment version
     // Update v'
-    && v'.myKeys == 
+    && v'.myKeys ==
         (map k | k in v.myKeys
           :: if k != v.nextKeyToSend then v.myKeys[k] else Entry(false, v.myKeys[k].version))
     && v'.nextDst in c.hostIds

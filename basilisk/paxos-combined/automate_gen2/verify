@@ -23,11 +23,11 @@ $dafnyMsgInv "$scriptpath/distributedSystem.dfy" > autoInvs.log
 time {
     echo "Verifying batch 1/3"
     echo "$files1" | tr " " "\n";
-    $dafnyVerify $files1; 
+    $dafnyVerify $files1;
     echo "Verifying batch 2/3"
     echo "$files2" | tr " " "\n";
-    $dafnyVerify $files2; 
+    $dafnyVerify $files2;
     echo "Verifying batch 3/3"
     echo "$files3" | tr " " "\n";
-    $dafnyVerify $files3; 
+    $dafnyVerify $files3;
 }

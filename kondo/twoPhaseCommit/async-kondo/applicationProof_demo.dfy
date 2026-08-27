@@ -21,7 +21,7 @@ ghost predicate LeaderVotesValid1(c: Constants, v: Variables)
 {
   forall hostId: int, i: nat
  {:trigger hostId in v.History(i).GetCoordinator(c).yesVotes}
- | v.ValidHistoryIdx(i) && hostId in v.History(i).GetCoordinator(c).yesVotes :: 
+ | v.ValidHistoryIdx(i) && hostId in v.History(i).GetCoordinator(c).yesVotes ::
     0 <= hostId &&
     hostId < |c.participants|
 }
@@ -32,7 +32,7 @@ ghost predicate LeaderVotesValid2(c: Constants, v: Variables)
 {
   forall hostId: int, i: nat
  {:trigger hostId in v.History(i).GetCoordinator(c).noVotes}
- | v.ValidHistoryIdx(i) && hostId in v.History(i).GetCoordinator(c).noVotes :: 
+ | v.ValidHistoryIdx(i) && hostId in v.History(i).GetCoordinator(c).noVotes ::
     0 <= hostId &&
     hostId < |c.participants|
 }
@@ -47,7 +47,7 @@ ghost predicate LeaderTallyReflectsPreferences1(c: Constants, v: Variables)
     true &&
     forall hostId: int
  {:trigger GetParticipantPreference(c, hostId), v.ValidHistoryIdx(i)} {:trigger hostId in v.History(i).GetCoordinator(c).yesVotes}
- | hostId in v.History(i).GetCoordinator(c).yesVotes :: 
+ | hostId in v.History(i).GetCoordinator(c).yesVotes ::
       GetParticipantPreference(c, hostId) == Yes
   )
 }
@@ -62,7 +62,7 @@ ghost predicate LeaderTallyReflectsPreferences2(c: Constants, v: Variables)
     true &&
     forall hostId: int
  {:trigger GetParticipantPreference(c, hostId), v.ValidHistoryIdx(i)} {:trigger hostId in v.History(i).GetCoordinator(c).noVotes}
- | hostId in v.History(i).GetCoordinator(c).noVotes :: 
+ | hostId in v.History(i).GetCoordinator(c).noVotes ::
       GetParticipantPreference(c, hostId) == No
   )
 }
@@ -190,7 +190,7 @@ lemma YesVotesContainsAllParticipantsWhenFull(c: Constants, v: Variables)
   requires Inv(c, v)
   requires |v.Last().GetCoordinator(c).yesVotes| == |c.participants|
   ensures forall id: int
- 
+
  | 0 <= id < |c.participants| :: id in v.Last().GetCoordinator(c).yesVotes
   decreases c, v
 {
@@ -210,7 +210,7 @@ lemma YesVotesContainsAllParticipantsWhenFull(c: Constants, v: Variables)
 lemma SetLemma(S: set<HostId>, e: HostId, size: int)
   requires 0 <= e < size
   requires forall x: int
- 
+
  | x in S :: 0 <= x && x < size
   requires e !in S
   ensures |S| < size

@@ -4,7 +4,7 @@ using JetBrains.Annotations;
 
 namespace Microsoft.Dafny{
     public class UpdatedFunctions {
-        public Dictionary<String, List<String>> updatedParameters = new Dictionary<String, List<String>>(); 
+        public Dictionary<String, List<String>> updatedParameters = new Dictionary<String, List<String>>();
     }
 
     public class MessageUpdates {

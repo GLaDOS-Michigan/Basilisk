@@ -63,21 +63,21 @@ module DistributedSystem {
     ghost predicate UniqueLeaderIds()
       decreases this
     {
-      forall i: int, j: int | ValidLeaderIdx(i) && ValidLeaderIdx(j) && leaders[i].id == leaders[j].id :: 
+      forall i: int, j: int | ValidLeaderIdx(i) && ValidLeaderIdx(j) && leaders[i].id == leaders[j].id ::
         i == j
     }
 
     ghost predicate UniqueAcceptorIds()
       decreases this
     {
-      forall i: int, j: int | ValidAcceptorIdx(i) && ValidAcceptorIdx(j) && acceptors[i].id == acceptors[j].id :: 
+      forall i: int, j: int | ValidAcceptorIdx(i) && ValidAcceptorIdx(j) && acceptors[i].id == acceptors[j].id ::
         i == j
     }
 
     ghost predicate UniqueLearnerIds()
       decreases this
     {
-      forall i: int, j: int | ValidLearnerIdx(i) && ValidLearnerIdx(j) && learners[i].id == learners[j].id :: 
+      forall i: int, j: int | ValidLearnerIdx(i) && ValidLearnerIdx(j) && learners[i].id == learners[j].id ::
         i == j
     }
   }
@@ -107,22 +107,22 @@ module DistributedSystem {
     history: seq<Hosts>,
     network: Network.Variables
   ) {
-  
+
     ghost predicate ValidHistoryIdx(i: int) {
       0 <= i < |history|
     }
-  
+
     ghost predicate ValidHistoryIdxStrict(i: int) {
       0 <= i < |history|-1
     }
-  
+
     ghost predicate WF(c: Constants) {
       && c.WF()
       && 0 < |history|
       && History(0).WF(c)   // useful fact
       && (forall i | ValidHistoryIdx(i) :: History(i).WF(c))
     }
-  
+
     ghost function Last() : (h: Hosts)
       requires 0 < |history|
       ensures h == history[|history|-1]
@@ -130,7 +130,7 @@ module DistributedSystem {
    {
       UtilitiesLibrary.Last(history)
     }
-  
+
     ghost function History(i: int) : (h: Hosts)
       requires ValidHistoryIdx(i)
       ensures h == history[i]
@@ -156,7 +156,7 @@ module DistributedSystem {
     && Network.Init(v.network)
   }
 
-  datatype Step = 
+  datatype Step =
     | LeaderHostStep(actor: nat, msgOps: MessageOps)
     | AcceptorHostStep(actor: nat, msgOps: MessageOps)
     | LearnerHostStep(actor: nat, msgOps: MessageOps)

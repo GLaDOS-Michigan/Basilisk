@@ -19,7 +19,7 @@ import opened Obligations
 ghost predicate HasVoteImpliesVoterNominates(c: Constants, v: Variables)
   requires v.WF(c)
 {
-  forall nominee: nat, voter: nat | 
+  forall nominee: nat, voter: nat |
     && c.ValidHostId(nominee)
     && c.ValidHostId(voter)
     && v.hosts[nominee].HasVoteFrom(voter)
@@ -82,7 +82,7 @@ lemma InvInductive(c: Constants, v: Variables, v': Variables)
   SafetyProof(c, v');
 }
 
-lemma SafetyProof(c: Constants, v': Variables) 
+lemma SafetyProof(c: Constants, v': Variables)
   requires MessageInv(c, v')
   requires ProtocolInv(c, v')
   ensures Safety(c, v')

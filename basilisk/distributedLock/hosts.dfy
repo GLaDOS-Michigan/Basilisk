@@ -47,8 +47,8 @@ module Host {
     && v.WF(c)
     && if c.hostId == 0 then
         && v.myEpoch == 1
-        && v.hasLock 
-      else 
+        && v.hasLock
+      else
         && v.myEpoch == 0
         && !v.hasLock
   }
@@ -64,7 +64,7 @@ module Host {
       case ReceiveStep => NextReceiveStep(c, v, v', msgOps)
   }
 
-  ghost predicate NextTransmissionStep(c: Constants, v: Variables, v': Variables, msgOps: MessageOps) 
+  ghost predicate NextTransmissionStep(c: Constants, v: Variables, v': Variables, msgOps: MessageOps)
     requires v.WF(c)
   {
     && msgOps.send.Some?
@@ -73,7 +73,7 @@ module Host {
   }
 
   // Send predicate
-  ghost predicate SendGrant(c: Constants, v: Variables, v': Variables, msg: Message) 
+  ghost predicate SendGrant(c: Constants, v: Variables, v': Variables, msg: Message)
     requires v.WF(c)
   {
     && v.hasLock

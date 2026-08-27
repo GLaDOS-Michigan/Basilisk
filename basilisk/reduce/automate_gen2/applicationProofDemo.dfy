@@ -20,7 +20,7 @@ ghost predicate Inv(c: Constants, v: Variables)
   && RegularInvs(c, v)
   && Safety(c, v)
 }
-  
+
 
 /***************************************************************************************
 *                                    Obligations                                       *
@@ -62,11 +62,11 @@ lemma sequenceSumLemma(hosts: seq<Host.Constants>, peerSums: seq<Option<int>>)
   if(|hosts| != 0) {
     SumLemma2(hosts[0].arr, SumOfSequences(hosts[1..]));
     sequenceSumLemma(hosts[1..], peerSums[1..]);
-  }   
+  }
 
 }
 
-lemma InvNextSafety(c: Constants, v: Variables, v': Variables) 
+lemma InvNextSafety(c: Constants, v: Variables, v': Variables)
   requires Inv(c, v)
   requires MessageInv(c, v')
   requires Next(c, v, v')

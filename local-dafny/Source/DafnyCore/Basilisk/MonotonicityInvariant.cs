@@ -29,7 +29,7 @@ namespace Microsoft.Dafny
 
       foreach (var formal in variableDecl.GetGroundingCtor().Formals) {
         var typeName = ExtractTypeName(formal);
-        if (typeName.StartsWith("Monotonic")) {   
+        if (typeName.StartsWith("Monotonic")) {
           // Found a monotonic type
           var name = formal.DisplayName;
 
@@ -51,7 +51,7 @@ namespace Microsoft.Dafny
       }
       return res;
     }
-    
+
     // Get the Module in Module.Variables
     private static string ExtractInvariantModule(TopLevelDecl func) {
       return func.FullDafnyName.Substring(0, func.FullDafnyName.IndexOf('.'));
@@ -219,11 +219,11 @@ namespace Microsoft.Dafny
       //        "{\n" +
       //        string.Format("  forall msg | msg in v'.network.sentMsgs && msg.{0}?\n", msgType) +
       //        "  ensures\n" +
-      //        "  (exists i ::\n" + 
+      //        "  (exists i ::\n" +
       //        "    && v'.ValidHistoryIdxStrict(i)\n" +
       //       string.Format("    && {0}.{1}(c.{2}[msg.Src()], v'.History(i).{2}[msg.Src()], v'.History(i+1).{2}[msg.Src()], msg)\n", module, functionName, variableField) +
       //        "  ) {\n" +
-      //        "    if msg !in v.network.sentMsgs {\n" + 
+      //        "    if msg !in v.network.sentMsgs {\n" +
       //        "      // witness and trigger\n" +
       //        "      var i := |v.history|-1;\n" +
       //        string.Format("      assert {0}.{1}(c.{2}[msg.Src()], v'.History(i).{2}[msg.Src()], v'.History(i+1).{2}[msg.Src()], msg);\n", module, functionName, variableField) +
@@ -308,6 +308,6 @@ namespace Microsoft.Dafny
 
     public override string ToString(){
       return string.Format("Monotonic field [{0}: {1}] in module [{2}], in DistributedSystem.[Hosts.{3}]", name, typeName, module, variableField);
-    }  
+    }
   }
 }

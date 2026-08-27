@@ -13,7 +13,7 @@ module CoordinatorHost {
   }
 
   datatype Variables = Variables(
-    decision: MonotonicWriteOnceOption<Decision>, 
+    decision: MonotonicWriteOnceOption<Decision>,
     yesVotes: MonotonicSet<HostId>,
     noVotes: MonotonicSet<HostId>,
     preCommitAcks: MonotonicSet<HostId>
@@ -82,7 +82,7 @@ module CoordinatorHost {
   // Send predicate
   ghost predicate SendVoteReq(c: Constants, v: Variables, v': Variables, msg: Message) {
     && msg == VoteReq
-    && v' == v 
+    && v' == v
   }
 
   ghost predicate NextReceiveVoteStep(c: Constants, v: Variables, v': Variables, msgOps: MessageOps) {
@@ -116,7 +116,7 @@ module CoordinatorHost {
   }
 
   // Receive vote trigger
-  // First 2 arguments are mandatory. Second argument identifies target host. 
+  // First 2 arguments are mandatory. Second argument identifies target host.
   ghost predicate ReceiveVoteTrigger1(c: Constants, v: Variables, voterId: HostId) {
     v.yesVotes.Contains(voterId)
   }
@@ -170,7 +170,7 @@ module CoordinatorHost {
     && var src := inMsg.src;
     // update v'
     && v' == v.(preCommitAcks := v.preCommitAcks.Add(src))
-  } 
+  }
 
   ghost predicate Next(c: Constants, v: Variables, v': Variables, msgOps: MessageOps)
   {
@@ -245,7 +245,7 @@ module ParticipantHost {
     match step
       case ReceiveVoteReqStep => NextReceiveVoteReqStep(c, v, v', msgOps)
       case ReceiveDecisionStep => NextReceiveDecisionStep(c, v, v', msgOps)
-      case StutterStep => 
+      case StutterStep =>
           && v == v'
           && msgOps.send == msgOps.recv == None
       case ReceivePrecommitStep => NextReceivePrecommitSendPrecommitackStep(c, v, v', msgOps)
@@ -295,7 +295,7 @@ module ParticipantHost {
   }
 
   // Receive decision trigger
-  // First 2 arguments are mandatory. Second argument identifies target host. 
+  // First 2 arguments are mandatory. Second argument identifies target host.
   ghost predicate ReceiveDecideTrigger(c: Constants, v: Variables) {
     v.decision.WOSome?
   }

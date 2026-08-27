@@ -13,7 +13,7 @@ datatype Constants = Constants(
     && 0 < |hosts|
     && UniqueIds()
   }
-  
+
   ghost predicate UniqueIds() {
       forall i, j | ValidIdx(i) && ValidIdx(j) && hosts[i].myId == hosts[j].myId :: i == j
     }
@@ -40,11 +40,11 @@ ghost predicate Init(c: Constants, v: Variables) {
   && Host.GroupInit(c.hosts, v.hosts)
 }
 
-datatype Step = 
+datatype Step =
   | Transfer(sender: HostId, receiver: HostId, transmit: Transmit)
   | StutterStep()
 
-ghost predicate NextTransferStep(c: Constants, v: Variables, v': Variables, sender: HostId, receiver: HostId, transmit: Transmit) 
+ghost predicate NextTransferStep(c: Constants, v: Variables, v': Variables, sender: HostId, receiver: HostId, transmit: Transmit)
   requires v.WF(c) && v'.WF(c)
 {
   // Sender action
@@ -56,8 +56,8 @@ ghost predicate NextTransferStep(c: Constants, v: Variables, v': Variables, send
   && c.ValidIdx(receiver)
   && Host.Next(c.hosts[receiver], v.hosts[receiver], v'.hosts[receiver], transmit.Recv())
   // All others unchanged
-  && (forall otherHostIdx | 
-        && c.ValidIdx(otherHostIdx) 
+  && (forall otherHostIdx |
+        && c.ValidIdx(otherHostIdx)
         && otherHostIdx != sender
         && otherHostIdx != receiver :: v'.hosts[otherHostIdx] == v.hosts[otherHostIdx])
 }

@@ -35,7 +35,7 @@ module DistributedSystem {
     ghost predicate UniqueIds()
       decreases this
     {
-      forall i: int, j: int | ValidClientIdx(i) && ValidClientIdx(j) && clients[i].myId == clients[j].myId :: 
+      forall i: int, j: int | ValidClientIdx(i) && ValidClientIdx(j) && clients[i].myId == clients[j].myId ::
         i == j
     }
 
@@ -64,21 +64,21 @@ module DistributedSystem {
     history: seq<Hosts>,
     network: Network.Variables
   ) {
-  
+
     ghost predicate ValidHistoryIdx(i: int) {
       0 <= i < |history|
     }
-  
+
     ghost predicate ValidHistoryIdxStrict(i: int) {
       0 <= i < |history|-1
     }
-  
+
     ghost predicate WF(c: Constants) {
       && c.WF()
       && 0 < |history|
       && (forall i | ValidHistoryIdx(i) :: history[i].WF(c))
     }
-  
+
     ghost function Last() : (h: Hosts)
       requires 0 < |history|
       ensures h == history[|history|-1]
@@ -86,7 +86,7 @@ module DistributedSystem {
    {
       UtilitiesLibrary.Last(history)
     }
-  
+
     ghost function History(i: int) : (h: Hosts)
       requires ValidHistoryIdx(i)
       ensures h == history[i]
@@ -110,7 +110,7 @@ module DistributedSystem {
     && Network.Init(v.network)
   }
 
-  datatype Step = 
+  datatype Step =
     | ClientHostStep(actor: nat, msgOps: MessageOps)
     | ServerHostStep(actor: nat, msgOps: MessageOps)
 

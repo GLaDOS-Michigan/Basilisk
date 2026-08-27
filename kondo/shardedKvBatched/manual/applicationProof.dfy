@@ -15,13 +15,13 @@ module ShardedKVProof {
   //   :: v.hosts[i].HasKey(k)
   // }
 
-  ghost predicate KeyInFlight(c: Constants, v: Variables, k: UniqueKey) 
+  ghost predicate KeyInFlight(c: Constants, v: Variables, k: UniqueKey)
     requires v.WF(c)
   {
       exists msg :: KeyInFlightByMessage(c, v, msg, k)
   }
 
-  ghost predicate KeyInFlightByMessage(c: Constants, v: Variables, msg: Message, k: UniqueKey) 
+  ghost predicate KeyInFlightByMessage(c: Constants, v: Variables, msg: Message, k: UniqueKey)
     requires v.WF(c)
   {
       && msg in v.network.sentMsgs
@@ -34,16 +34,16 @@ module ShardedKVProof {
   ghost predicate AtMostOneInFlight(c: Constants, v: Variables)
     requires v.WF(c)
   {
-    forall k, m1, m2 | KeyInFlightByMessage(c, v, m1, k) && KeyInFlightByMessage(c, v, m2, k) 
+    forall k, m1, m2 | KeyInFlightByMessage(c, v, m1, k) && KeyInFlightByMessage(c, v, m2, k)
     :: m1 == m2
   }
 
-  ghost predicate NoneHasLiveKey(c: Constants, v: Variables, k: UniqueKey) 
+  ghost predicate NoneHasLiveKey(c: Constants, v: Variables, k: UniqueKey)
     requires v.WF(c)
   {
     forall idx | c.ValidIdx(idx) :: !v.hosts[idx].HasLiveKey(k)
   }
-  
+
 
   ghost predicate LiveKeyImpliesNoneInFlight(c: Constants, v: Variables)
     requires v.WF(c)
@@ -120,7 +120,7 @@ lemma InvNextAtMostOneInFlight(c: Constants, v: Variables, v': Variables)
   requires Next(c, v, v')
   ensures AtMostOneInFlight(c, v')
 {
-  forall k, m1, m2 | KeyInFlightByMessage(c, v', m1, k) && KeyInFlightByMessage(c, v', m2, k) 
+  forall k, m1, m2 | KeyInFlightByMessage(c, v', m1, k) && KeyInFlightByMessage(c, v', m2, k)
   ensures m1 == m2
   {
     if m1 != m2 {
@@ -185,9 +185,9 @@ lemma InvNextSafety(c: Constants, v: Variables, v': Variables)
   requires Next(c, v, v')
   ensures Safety(c, v')
 {
-  forall idx1, idx2, k: UniqueKey | 
-    && c.ValidIdx(idx1) 
-    && c.ValidIdx(idx2) 
+  forall idx1, idx2, k: UniqueKey |
+    && c.ValidIdx(idx1)
+    && c.ValidIdx(idx2)
     && v'.hosts[idx1].HasLiveKey(k)
     && v'.hosts[idx2].HasLiveKey(k)
   ensures
@@ -221,10 +221,10 @@ lemma AtMostOneHostHasLiveKey(c: Constants, v: Variables, v': Variables, k: Uniq
     var step :| Host.NextStep(cs, s, s', step, msgOps);
     if step.ReceiveStep? && v'.hosts[other].HasLiveKey(k) {
       // triggers
-      assert KeyInFlightByMessage(c, v, msgOps.recv.value, k);  
+      assert KeyInFlightByMessage(c, v, msgOps.recv.value, k);
       assert KeyInFlight(c, v, k);
       assert false;
-    }    
+    }
   }
 }
 

@@ -12,18 +12,18 @@ import opened Obligations
 ghost predicate VoteValidSrc(c: Constants, v: Variables)
   requires v.WF(c)
 {
-  forall msg | msg in v.network.sentMsgs && msg.Vote? 
+  forall msg | msg in v.network.sentMsgs && msg.Vote?
   :: c.ValidParticipantId(msg.src)
 }
 
 // Send Invariant
-// Vote reflects the preference of the voter 
+// Vote reflects the preference of the voter
 // Note that "0 <= msg.src < |c.hosts|-1" is prereq of GetParticipantPreference
 ghost predicate VoteAgreeWithVoter(c: Constants, v: Variables)
   requires v.WF(c)
   requires VoteValidSrc(c, v)
 {
-  forall msg | msg in v.network.sentMsgs && msg.Vote? 
+  forall msg | msg in v.network.sentMsgs && msg.Vote?
   :: GetParticipantPreference(c, msg.src) == msg.v
 }
 
@@ -33,7 +33,7 @@ ghost predicate VoteAgreeWithVoter(c: Constants, v: Variables)
 ghost predicate DecisionMsgsAgreeWithLeader(c: Constants, v: Variables)
   requires v.WF(c)
 {
-  forall msg | msg in v.network.sentMsgs && msg.Decide? 
+  forall msg | msg in v.network.sentMsgs && msg.Decide?
   :: v.GetCoordinator(c).decision.Some? && msg.decision == v.GetCoordinator(c).decision.value
 }
 

@@ -5,11 +5,11 @@ module Obligations {
   import opened UtilitiesLibrary
   import opened System
 
-  ghost predicate Safety(c: Constants, v: Variables) 
+  ghost predicate Safety(c: Constants, v: Variables)
     requires c.WF()
     requires v.WF(c)
   {
-    forall idx1, idx2, k: UniqueKey | 
+    forall idx1, idx2, k: UniqueKey |
       && c.ValidIdx(idx1)
       && c.ValidIdx(idx2)
       && Host.HostOwnsUniqueKey(c.hosts[idx1], v.hosts[idx1], k)

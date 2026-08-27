@@ -1,8 +1,8 @@
 include "types.dfy"
 
-/* The "client_server_ae protocol sourced from DuoAI (OSDI'22) 
- * Multiple clients can send requests to a server. The server processes each request 
- * and returns a response to the respective client. The server may process the 
+/* The "client_server_ae protocol sourced from DuoAI (OSDI'22)
+ * Multiple clients can send requests to a server. The server processes each request
+ * and returns a response to the respective client. The server may process the
  * requests out-of-order.*/
 
 /***************************************************************************************
@@ -51,19 +51,19 @@ module ServerHost {
   ghost predicate NextStep(c: Constants, v: Variables, v': Variables, step: Step, msgOps: MessageOps)
   {
     match step
-      case ReceiveStep => NextReceiveRequestStep(c, v, v', msgOps)
+      case ReceiveStep => NextReceiveRequestStep(c, v, v', step, msgOps)
       case StutterStep => && v == v'
                           && msgOps.send == msgOps.recv == None
   }
 
-  ghost predicate NextReceiveRequestStep(c: Constants, v: Variables, v': Variables, msgOps: MessageOps) {
+  ghost predicate NextReceiveRequestStep(c: Constants, v: Variables, v': Variables, step: Step, msgOps: MessageOps) {
     && msgOps.recv.Some?
     && msgOps.send.Some?
-    && ReceiveRequestSendResponse(c, v, v', msgOps.recv.value, msgOps.send.value)
+    && ReceiveRequestSendResponse(c, v, v', step, msgOps.recv.value, msgOps.send.value)
   }
 
   // Receive predicate
-  ghost predicate ReceiveRequestSendResponse(c: Constants, v: Variables, v': Variables, inMsg: Message, outMsg: Message) {
+  ghost predicate ReceiveRequestSendResponse(c: Constants, v: Variables, v': Variables, step: Step, inMsg: Message, outMsg: Message) {
     // enabling conditions
     && inMsg.Request?
     // update v'
@@ -130,41 +130,41 @@ module ClientHost {
 
   datatype Step =
       RequestStep()
-    | ReceiveStep() 
+    | ReceiveStep()
     | StutterStep
 
   ghost predicate NextStep(c: Constants, v: Variables, v': Variables, step: Step, msgOps: MessageOps) {
     match step
-      case RequestStep() => NextRequestStep(c, v, v', msgOps)
-      case ReceiveStep => NextReceiveResponseStep(c, v, v', msgOps)
-      case StutterStep => 
+      case RequestStep() => NextRequestStep(c, v, v', step, msgOps)
+      case ReceiveStep => NextReceiveResponseStep(c, v, v', step, msgOps)
+      case StutterStep =>
           && v == v'
           && msgOps.send == msgOps.recv == None
   }
 
-  ghost predicate NextRequestStep(c: Constants, v: Variables, v': Variables, msgOps: MessageOps) {
+  ghost predicate NextRequestStep(c: Constants, v: Variables, v': Variables, step: Step, msgOps: MessageOps) {
     && msgOps.recv.None?
     && msgOps.send.Some?
-    && SendRequest(c, v, v', msgOps.send.value)
+    && SendRequest(c, v, v', step, msgOps.send.value)
   }
 
   // Send predicate
-  ghost predicate SendRequest(c: Constants, v: Variables, v': Variables, msg: Message) {
+  ghost predicate SendRequest(c: Constants, v: Variables, v': Variables, step: Step, outMsg: Message) {
     // send message and update v'
-    && msg.Request?
-    && msg.r.clientId == c.clientId
-    && msg.r.reqId in v.requests.s
+    && outMsg.Request?
+    && outMsg.r.clientId == c.clientId
+    && outMsg.r.reqId in v.requests.s
     && v' == v
   }
 
-  ghost predicate NextReceiveResponseStep(c: Constants, v: Variables, v': Variables, msgOps: MessageOps) {
+  ghost predicate NextReceiveResponseStep(c: Constants, v: Variables, v': Variables, step: Step, msgOps: MessageOps) {
     && msgOps.recv.Some?
     && msgOps.send.None?
-    && ReceiveResponse(c, v, v', msgOps.recv.value)
+    && ReceiveResponse(c, v, v', step, msgOps.recv.value)
   }
 
   // Receive predicate
-  ghost predicate ReceiveResponse(c: Constants, v: Variables, v': Variables, inMsg: Message) {
+  ghost predicate ReceiveResponse(c: Constants, v: Variables, v': Variables, step: Step, inMsg: Message) {
     // enabling conditions
     && inMsg.Response?
     && inMsg.r.clientId == c.clientId

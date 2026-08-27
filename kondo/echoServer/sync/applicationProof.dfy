@@ -5,7 +5,7 @@ import opened Types
 import opened UtilitiesLibrary
 import opened System
 import opened Obligations
-  
+
 
 /***************************************************************************************
 *                                Application Invariants                                *
@@ -16,7 +16,7 @@ ghost predicate ServerRequestsValid(c: Constants, v: Variables)
 {
   && v.GetServer(c).currentRequest.Some?
   && c.ValidClientIdx(v.GetServer(c).currentRequest.value.clientId)
-  ==> 
+  ==>
   && var req := v.GetServer(c).currentRequest.value;
   && req.reqId in v.clients[req.clientId].requests.s
 }

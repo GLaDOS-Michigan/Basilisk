@@ -6,30 +6,30 @@ module ToylockProof {
   import opened DistributedSystem
   import opened Obligations
 
-  ghost predicate MsgInFlight(c: Constants, v: Variables, msg: Message) 
+  ghost predicate MsgInFlight(c: Constants, v: Variables, msg: Message)
     requires v.WF(c)
   {
     && msg in v.network.sentMsgs
-    && c.ValidIdx(msg.dst) 
+    && c.ValidIdx(msg.dst)
     && msg.epoch > v.hosts[msg.dst].myEpoch
   }
 
   ghost predicate AtMostOneInFlight(c: Constants, v: Variables)
     requires v.WF(c)
   {
-    forall m1, m2 | 
-      && m1 in v.network.sentMsgs && m2 in v.network.sentMsgs 
+    forall m1, m2 |
+      && m1 in v.network.sentMsgs && m2 in v.network.sentMsgs
       && MsgInFlight(c, v, m1) && MsgInFlight(c, v, m2)
     ::
       m1 == m2
   }
 
-  ghost predicate NoneHasLock(c: Constants, v: Variables) 
+  ghost predicate NoneHasLock(c: Constants, v: Variables)
     requires v.WF(c)
   {
     forall idx | c.ValidIdx(idx) :: !HoldsLock(c, v, idx)
   }
-  
+
 
   ghost predicate HasLockImpliesNoneInFlight(c: Constants, v: Variables)
     requires v.WF(c)

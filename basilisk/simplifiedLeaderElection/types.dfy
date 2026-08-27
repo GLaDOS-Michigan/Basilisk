@@ -6,7 +6,7 @@ module Types {
   type HostId = nat
 
   datatype Message =
-    VoteReq(candidate: HostId) | Vote(voter: HostId, candidate: HostId) 
+    VoteReq(candidate: HostId) | Vote(voter: HostId, candidate: HostId)
   {
     ghost function Src() : nat {
       match this {

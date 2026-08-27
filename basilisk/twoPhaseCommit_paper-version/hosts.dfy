@@ -13,7 +13,7 @@ module CoordinatorHost {
   }
 
   datatype Variables = Variables(
-    decision: Option<Decision>, 
+    decision: Option<Decision>,
     yesVotes: MonotonicSet<HostId>,
     noVotes: MonotonicSet<HostId>
   )
@@ -196,7 +196,7 @@ module ParticipantHost {
     match step
       case SendVoteStep => NextSendVoteStep(c, v, v', msgOps)
       case ReceiveDecisionStep => NextReceiveDecisionStep(c, v, v', msgOps)
-      case StutterStep => 
+      case StutterStep =>
           && v == v'
           && msgOps.send == msgOps.recv == None
   }
@@ -230,7 +230,7 @@ module ParticipantHost {
   }
 
   // Receive decision trigger
-  // First 2 arguments are mandatory. Second argument identifies target host. 
+  // First 2 arguments are mandatory. Second argument identifies target host.
   ghost predicate ReceiveDecideTrigger(c: Constants, v: Variables) {
     v.decision.Some?
   }

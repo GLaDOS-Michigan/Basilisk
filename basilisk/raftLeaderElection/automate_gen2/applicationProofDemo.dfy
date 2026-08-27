@@ -22,7 +22,7 @@ ghost predicate Inv(c: Constants, v: Variables)
   && RegularInvs(c, v)
   && Safety(c, v)
 }
-  
+
 
 /***************************************************************************************
 *                                    Obligations                                       *
@@ -57,7 +57,7 @@ lemma InvInductive(c: Constants, v: Variables, v': Variables)
 // BEGIN SAFETY PROOF
 
 
-lemma RegularInvImpliesSafety(c: Constants, v: Variables) 
+lemma RegularInvImpliesSafety(c: Constants, v: Variables)
   requires RegularInvs(c, v)
   ensures Safety(c, v)
 {

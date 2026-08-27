@@ -54,7 +54,7 @@ module DistributedSystem {
     ghost predicate ValidLearnerIdx(id: int) {
       0 <= id < |learnerConstants|
     }
-    
+
     ghost predicate UniqueLeaderIds() {
       forall i, j | ValidLeaderIdx(i) && ValidLeaderIdx(j) && leaderConstants[i].id == leaderConstants[j].id :: i == j
     }
@@ -91,8 +91,8 @@ module DistributedSystem {
 
     && Network.Init(v.network)
   }
-  
-  datatype Step = 
+
+  datatype Step =
     LeaderStep(actor: nat, msgOps: MessageOps)
     | AcceptorStep(actor: nat, msgOps: MessageOps)
     | LearnerStep(actor: nat, msgOps: MessageOps)
@@ -101,13 +101,13 @@ module DistributedSystem {
     requires v.WF(c) && v'.WF(c)
   {
     && Network.Next(v.network, v'.network, step.msgOps)
-    && match step 
+    && match step
       case LeaderStep(actor, msgOps) => NextLeaderStep(c, v, v', actor, msgOps)
       case AcceptorStep(actor, msgOps) => NextAcceptorStep(c, v, v', actor, msgOps)
       case LearnerStep(actor, msgOps) => NextLearnerStep(c, v, v', actor, msgOps)
   }
 
-  ghost predicate NextLeaderStep(c: Constants, v: Variables, v': Variables, actor: nat, msgOps: MessageOps) 
+  ghost predicate NextLeaderStep(c: Constants, v: Variables, v': Variables, actor: nat, msgOps: MessageOps)
     requires v.WF(c) && v'.WF(c)
   {
     && c.ValidLeaderIdx(actor)
@@ -118,7 +118,7 @@ module DistributedSystem {
     && v'.learners == v.learners
   }
 
-  ghost predicate NextAcceptorStep(c: Constants, v: Variables, v': Variables, actor: nat, msgOps: MessageOps) 
+  ghost predicate NextAcceptorStep(c: Constants, v: Variables, v': Variables, actor: nat, msgOps: MessageOps)
     requires v.WF(c) && v'.WF(c)
   {
     && c.ValidAcceptorIdx(actor)
@@ -129,7 +129,7 @@ module DistributedSystem {
     && v'.learners == v.learners
   }
 
-  ghost predicate NextLearnerStep(c: Constants, v: Variables, v': Variables, actor: nat, msgOps: MessageOps) 
+  ghost predicate NextLearnerStep(c: Constants, v: Variables, v': Variables, actor: nat, msgOps: MessageOps)
     requires v.WF(c) && v'.WF(c)
   {
     && c.ValidLearnerIdx(actor)

@@ -6,7 +6,7 @@ module Obligations {
   import opened DistributedSystem
 
   // All responses received by clients are for valid requests
-  ghost predicate Safety(c: Constants, v: Variables) 
+  ghost predicate Safety(c: Constants, v: Variables)
     requires c.WF()
     requires v.WF(c)
   {

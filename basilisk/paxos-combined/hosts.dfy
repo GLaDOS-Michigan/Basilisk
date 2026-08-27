@@ -36,7 +36,7 @@ datatype Variables = Variables(
   ghost predicate LdrHeardAtLeast(b: HostId) {
     highestHeardBallot.MNSome? && highestHeardBallot.value >= b
   }
-  
+
   // My highestHeardBallot < b
   ghost predicate LdrHeardAtMost(b: HostId) {
     highestHeardBallot.MNNone? || highestHeardBallot.value < b
@@ -90,7 +90,7 @@ datatype Variables = Variables(
 
   ghost predicate HasLearnedValue(v: Value) {
     learned == Some(v)
-  }    
+  }
 }
 
 
@@ -111,7 +111,7 @@ ghost predicate GroupWF(grp_c: seq<Constants>, grp_v: seq<Variables>, f: nat) {
   && (forall i | 0 <= i < |grp_c| :: grp_v[i].WF(grp_c[i]))
 }
 
-ghost predicate GroupInit(grp_c: seq<Constants>, grp_v: seq<Variables>, f: nat) 
+ghost predicate GroupInit(grp_c: seq<Constants>, grp_v: seq<Variables>, f: nat)
   requires GroupWF(grp_c, grp_v, f)
 {
   forall i | 0 <= i < |grp_c| :: Init(grp_c[i], grp_v[i])
@@ -200,13 +200,13 @@ ghost predicate ReceivePromise1(c: Constants, v: Variables, v': Variables, inMsg
   // on its proposed value after receiving extraneous straggling promises.
   && |v.receivedPromisesAndValue.promises| <= c.f
   && acc !in v.receivedPromisesAndValue.promises
-  && var doUpdate := 
-        && vbOpt.Some? 
+  && var doUpdate :=
+        && vbOpt.Some?
         && v.LdrHeardAtMost(vbOpt.value.b);
   && !doUpdate
     && v' == v.(
-        receivedPromisesAndValue := 
-          v.receivedPromisesAndValue.(promises 
+        receivedPromisesAndValue :=
+          v.receivedPromisesAndValue.(promises
             := v.receivedPromisesAndValue.promises + {acc})
     )
 }
@@ -229,12 +229,12 @@ ghost predicate ReceivePromise2(c: Constants, v: Variables, v': Variables, inMsg
   // on its proposed value after receiving extraneous straggling promises.
   && |v.receivedPromisesAndValue.promises| <= c.f
   && acc !in v.receivedPromisesAndValue.promises
-  && var doUpdate := 
-        && vbOpt.Some? 
+  && var doUpdate :=
+        && vbOpt.Some?
         && v.LdrHeardAtMost(vbOpt.value.b);
   && doUpdate
     && v' == v.(
-              receivedPromisesAndValue := 
+              receivedPromisesAndValue :=
                 v.receivedPromisesAndValue.(
                   promises := v.receivedPromisesAndValue.promises + {acc},
                   value := vbOpt.value.v),
@@ -297,24 +297,24 @@ ghost predicate ReceiveProposeSendAccept(c: Constants, v: Variables, v': Variabl
   && doAccept
   && outMsg == Accept(VB(val, bal), c.id) // outMsg
   && v' == v.(
-        promised := MNSome(bal), 
+        promised := MNSome(bal),
         acceptedVB := MVBSome(VB(val, bal)))
 }
 
 
 /////////////////////////////// Learner actions
 
-function UpdateReceivedAccepts(receivedAccepts: MonotonicReceivedAccepts, 
+function UpdateReceivedAccepts(receivedAccepts: MonotonicReceivedAccepts,
   vb: ValBal, acc: HostId) : (out: MonotonicReceivedAccepts)
-  // Tony: ensures clauses are exactly how I can prove to the user, and tell dafny, that 
+  // Tony: ensures clauses are exactly how I can prove to the user, and tell dafny, that
   // data structures annotated as monotonic actually are monotonic --- cool!
   ensures vb in receivedAccepts.m ==> vb in out.m
   ensures vb in receivedAccepts.m ==> |receivedAccepts.m[vb]| <= |out.m[vb]|
 {
-  if vb in receivedAccepts.m then 
+  if vb in receivedAccepts.m then
     UnionIncreasesCardinality(receivedAccepts.m[vb], {acc});
     RA(receivedAccepts.m[vb := receivedAccepts.m[vb] + {acc}])
-  else 
+  else
     RA(receivedAccepts.m[vb := {acc}])
 }
 

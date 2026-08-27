@@ -17,7 +17,7 @@ module Types {
 
   datatype MessageOps = MessageOps(recv:Option<Message>, send:Option<Message>)
 
-  // Lemma: Given b1 < b2, there is a finite, strictly ordered sequence 
+  // Lemma: Given b1 < b2, there is a finite, strictly ordered sequence
   // [b1, b_a, b_b, ... , b_2] such that for all ballots b where b1 < b < b2, b in seq
   lemma FiniteBallots(b1: LeaderId, b2: LeaderId) returns (res: seq<LeaderId>)
     requires b1 < b2
@@ -45,19 +45,19 @@ datatype MonotonicVBOption = MVBSome(value: ValBal) | MVBNone
   }
 }
 
-datatype MonotonicReceivedAccepts = RA(m: map<ValBal, set<AcceptorId>>) 
+datatype MonotonicReceivedAccepts = RA(m: map<ValBal, set<AcceptorId>>)
 {
   ghost predicate SatisfiesMonotonic(past: MonotonicReceivedAccepts) {
-    forall vb | 
-    && vb in past.m 
-    :: 
+    forall vb |
+    && vb in past.m
+    ::
       && 0 < |past.m[vb]|
       && vb in this.m
       && past.m[vb] <= this.m[vb]
   }
 }
 
-datatype MonotonicPromisesAndValue = PV(promises: set<AcceptorId>, value: Value, f: nat) 
+datatype MonotonicPromisesAndValue = PV(promises: set<AcceptorId>, value: Value, f: nat)
 {
   ghost predicate SatisfiesMonotonic(past: MonotonicPromisesAndValue) {
     && past.promises <= this.promises

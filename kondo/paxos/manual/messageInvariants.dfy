@@ -9,12 +9,12 @@ import opened DistributedSystem
 import opened Obligations
 
 // Every message in the network has a valid source
-ghost predicate ValidMessageSrc(c: Constants, v: Variables) 
+ghost predicate ValidMessageSrc(c: Constants, v: Variables)
   requires v.WF(c)
 {
-  forall msg | msg in v.network.sentMsgs 
-  :: 
-  match msg 
+  forall msg | msg in v.network.sentMsgs
+  ::
+  match msg
     case Prepare(bal) => c.ValidLeaderIdx(bal)
     case Promise(_, acc, _) => c.ValidAcceptorIdx(acc)
     case Propose(bal, _) => c.ValidLeaderIdx(bal)
@@ -24,7 +24,7 @@ ghost predicate ValidMessageSrc(c: Constants, v: Variables)
 
 // Leader updates its highestHeard and value based on a Promise message carrying that
 // ballot and value
-ghost predicate LeaderValidHighestHeard(c: Constants, v: Variables) 
+ghost predicate LeaderValidHighestHeard(c: Constants, v: Variables)
   requires v.WF(c)
 {
   forall idx, b| c.ValidLeaderIdx(idx) && v.leaders[idx].highestHeardBallot == MNSome(b)
@@ -35,19 +35,19 @@ ghost predicate LeaderValidHighestHeard(c: Constants, v: Variables)
     )
 }
 
-ghost predicate AcceptorValidPendingMsg(c: Constants, v: Variables) 
+ghost predicate AcceptorValidPendingMsg(c: Constants, v: Variables)
   requires v.WF(c)
 {
   forall idx | c.ValidAcceptorIdx(idx) && v.acceptors[idx].pendingPrepare.Some?
   :: Prepare(v.acceptors[idx].pendingPrepare.value.bal) in v.network.sentMsgs
 }
 
-// Learner updates its receivedAccepts map based on a Accept message carrying that 
+// Learner updates its receivedAccepts map based on a Accept message carrying that
 // accepted ValBal pair
-ghost predicate LearnerValidReceivedAccepts(c: Constants, v: Variables) 
+ghost predicate LearnerValidReceivedAccepts(c: Constants, v: Variables)
   requires v.WF(c)
 {
-  forall idx, vb, acc | 
+  forall idx, vb, acc |
     && c.ValidLearnerIdx(idx)
     && vb in v.learners[idx].receivedAccepts.m
     && acc in v.learners[idx].receivedAccepts.m[vb]
@@ -56,7 +56,7 @@ ghost predicate LearnerValidReceivedAccepts(c: Constants, v: Variables)
 }
 
 // Message bundle: 7 clauses in total
-ghost predicate MessageInv(c: Constants, v: Variables) 
+ghost predicate MessageInv(c: Constants, v: Variables)
 {
   && v.WF(c)
   && ValidMessageSrc(c, v)             // 4

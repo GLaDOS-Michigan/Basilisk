@@ -16,24 +16,24 @@ ghost predicate ValidMessages(c: Constants, v: Variables)
   && ValidMessages2(c, v)
 }
 
-ghost predicate ValidMessages1(c: Constants, v: Variables) 
+ghost predicate ValidMessages1(c: Constants, v: Variables)
   requires v.WF(c)
 {
   forall msg | msg in v.network.sentMsgs && msg.VoteReq?
   :: c.ValidHostId(msg.candidate)
 }
 
-ghost predicate ValidMessages2(c: Constants, v: Variables) 
+ghost predicate ValidMessages2(c: Constants, v: Variables)
   requires v.WF(c)
 {
   forall msg | msg in v.network.sentMsgs && msg.Vote?
   :: c.ValidHostId(msg.voter)
 }
 
-ghost predicate ReceivedVotesValidity(c: Constants, v: Variables) 
+ghost predicate ReceivedVotesValidity(c: Constants, v: Variables)
   requires v.WF(c)
 {
-  forall idx, voter | c.ValidHostId(idx) && voter in v.hosts[idx].receivedVotes 
+  forall idx, voter | c.ValidHostId(idx) && voter in v.hosts[idx].receivedVotes
   :: Vote(voter, idx) in v.network.sentMsgs
 }
 
@@ -46,7 +46,7 @@ ghost predicate VoteMsgImpliesNominee(c: Constants, v: Variables)
 }
 
 // Protocol bundle: 4 clauses in total
-ghost predicate MessageInv(c: Constants, v: Variables) 
+ghost predicate MessageInv(c: Constants, v: Variables)
 {
   && v.WF(c)
   && ValidMessages1(c, v)

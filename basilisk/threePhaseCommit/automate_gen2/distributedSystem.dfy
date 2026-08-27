@@ -40,7 +40,7 @@ module DistributedSystem {
       id < |participants|
     }
 
-    ghost function GetCoordinator() : CoordinatorHost.Constants 
+    ghost function GetCoordinator() : CoordinatorHost.Constants
       requires WF()
     {
       coordinator[0]
@@ -57,7 +57,7 @@ module DistributedSystem {
       && ParticipantHost.GroupWF(c.participants, participants)
     }
 
-    ghost function GetCoordinator(c: Constants) : CoordinatorHost.Variables 
+    ghost function GetCoordinator(c: Constants) : CoordinatorHost.Variables
       requires WF(c)
     {
       coordinator[0]
@@ -71,7 +71,7 @@ module DistributedSystem {
     ghost predicate ValidHistoryIdx(i: int) {
       0 <= i < |history|
     }
-    
+
     ghost predicate ValidHistoryIdxStrict(i: int) {
       0 <= i < |history|-1
     }
@@ -89,7 +89,7 @@ module DistributedSystem {
       history[i]
     }
 
-    ghost function Last() : (h: Hosts) 
+    ghost function Last() : (h: Hosts)
       requires 0 < |history|
       ensures h == history[|history|-1]
     {
@@ -160,7 +160,7 @@ module DistributedSystem {
     InitHosts(c, v.History(0))
   }
 
-  ghost predicate ValidVariables(c: Constants, v: Variables) 
+  ghost predicate ValidVariables(c: Constants, v: Variables)
     requires v.WF(c)
   {
     && ValidHistory(c, v)

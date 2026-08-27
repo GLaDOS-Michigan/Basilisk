@@ -60,12 +60,12 @@ datatype MonotonicVBOption = MVBSome(value: ValBal) | MVBNone
   }
 }
 
-datatype MonotonicReceivedAccepts = RA(m: map<ValBal, set<HostId>>) 
+datatype MonotonicReceivedAccepts = RA(m: map<ValBal, set<HostId>>)
 {
   ghost predicate SatisfiesMonotonic(past: MonotonicReceivedAccepts) {
-    forall vb | 
-    && vb in past.m 
-    :: 
+    forall vb |
+    && vb in past.m
+    ::
       && 0 < |past.m[vb]|
       && vb in this.m
       && past.m[vb] <= this.m[vb]
@@ -77,7 +77,7 @@ datatype MonotonicLeaderState = LS(currBal: Ballot, value: Value, promises: set<
 {
   ghost predicate SatisfiesMonotonic(past: MonotonicLeaderState) {
     && BalLteq(past.currBal, currBal)
-    && (past.currBal == currBal ==> 
+    && (past.currBal == currBal ==>
             && past.promises <= this.promises
             && |past.promises| <= |this.promises|
             && (|past.promises| >= f+1 ==> this.value == past.value)
