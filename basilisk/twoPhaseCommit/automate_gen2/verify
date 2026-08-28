@@ -8,7 +8,7 @@ dafnyFootprint="$dafny /genFootprint"
 dafnyMsgInv="$dafny /msgMonoInvs"
 dafnyVerify="$dafny /timeLimit:20 /compile:0  /noNLarith /autoTriggers:1 /vcsCores:10"
 
-files="$scriptpath/../../lib/* $scriptpath/../hosts.dfy $scriptpath/distributedSystem.dfy $scriptpath/spec.dfy $scriptpath/messageInvariantsAutogen.dfy $scriptpath/monotonicityInvariantsAutogen.dfy $scriptpath/applicationProofDemo.dfy"
+files="$scriptpath/../../lib/* $scriptpath/../hosts.dfy $scriptpath/../types.dfy $scriptpath/distributedSystem.dfy $scriptpath/spec.dfy $scriptpath/messageInvariantsAutogen.dfy $scriptpath/monotonicityInvariantsAutogen.dfy $scriptpath/applicationProofDemo.dfy"
 
 rm -f $scriptpath/footprintsAutogen.json $scriptpath/messageInvariantsAutogen.dfy $scriptpath/monotonicityInvariantsAutogen.dfy
 
