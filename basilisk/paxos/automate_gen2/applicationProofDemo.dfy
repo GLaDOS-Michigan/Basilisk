@@ -117,8 +117,8 @@ lemma ChosenImpliesValidBallot(c: Constants, v: Variables, i: nat, vb: ValBal)
   var lnr: nat :| ChosenAtLearner(c, v.History(i), vb, lnr);
   var acc :| acc in v.History(i).learners[lnr].receivedAccepts.m[vb];
   reveal_ValidHistory();
-  var j, accMsg := ReceiveAcceptStepSkolemization(c, v, i, lnr, vb, acc);
-  var k, propMsg := SendAcceptSkolemization(c, v, accMsg);
+  var j, _, accMsgOps := ReceiveAcceptStepSkolemization(c, v, i, lnr, vb, acc);
+  var k, _, propMsgOps := SendAcceptSkolemization(c, v, accMsgOps.recv.value);
 }
 
 lemma SafetyProofBallotInduction(c: Constants, v: Variables, vb1: ValBal, vb2: ValBal, promQ: set<Message>, hb: LeaderId)
@@ -160,9 +160,10 @@ lemma SafetyProofBallotInductionStep(c: Constants, v: Variables, vb1: ValBal, vb
 
   // Skolemize the Propose message associated with hm
   var promiser := hm.Src();
-  var i, _ := SendPromiseSkolemization(c, v, hm);
+  var i, _, _ := SendPromiseSkolemization(c, v, hm);
   reveal_ValidHistory();
-  var _, propMsg, _ := ReceiveProposeSendAcceptStepSkolemization(c, v, i, promiser, MVBSome(VB(vb2.v, hb)));
+  var _, _, propMsgOps := ReceiveProposeSendAcceptStepSkolemization(c, v, i, promiser, MVBSome(VB(vb2.v, hb)));
+  var propMsg := propMsgOps.recv.value;
 
   if hb == vb1.b {
     // hb is highest ballot seen by vb2.b promise quorum
@@ -213,13 +214,13 @@ returns (promMsg: Message)
   var accMsg :| accMsg in accQ && accMsg.acc == acc;
   promMsg :| promMsg in promQ && promMsg.acc == acc;
 
-  var i, inMsg := SendPromiseSkolemization(c, v, promMsg);
-  var j, propMsg := SendAcceptSkolemization(c, v, accMsg);
+  var i, stepI, inMsg := SendPromiseSkolemization(c, v, promMsg);
+  var j, stepJ, propMsg := SendAcceptSkolemization(c, v, accMsg);
   // Helper needed to avoid timeout
-  ChosenImpliesSeenByHigherPromiseQuorumHelper(c, v, chosenVB, inMsg, promMsg, promBal, i, propMsg, accMsg, j);
+  ChosenImpliesSeenByHigherPromiseQuorumHelper(c, v, chosenVB, stepI, inMsg, promMsg, promBal, i, stepJ, propMsg, accMsg, j);
 }
 
-lemma ChosenImpliesSeenByHigherPromiseQuorumHelper(c: Constants, v: Variables, chosenVB: ValBal, inMsg: Message, promMsg: Message, promBal: LeaderId, i: nat, propMsg: Message, accMsg: Message, j: nat)
+lemma ChosenImpliesSeenByHigherPromiseQuorumHelper(c: Constants, v: Variables, chosenVB: ValBal, stepI: AcceptorHost.Step, inMsg: Message, promMsg: Message, promBal: LeaderId, i: nat, stepJ: AcceptorHost.Step, propMsg: Message, accMsg: Message, j: nat)
   requires RegularInvs(c, v)
   requires IsPromiseMessage(v, promMsg)
   requires IsAcceptMessage(v, accMsg)
@@ -230,8 +231,8 @@ lemma ChosenImpliesSeenByHigherPromiseQuorumHelper(c: Constants, v: Variables, c
   requires promMsg.bal == promBal
   requires v.ValidHistoryIdxStrict(i)
   requires v.ValidHistoryIdxStrict(j)
-  requires AcceptorHost.ReceivePrepareSendPromise(c.acceptors[promMsg.Src()], v.History(i).acceptors[promMsg.Src()], v.History(i+1).acceptors[promMsg.Src()], inMsg, promMsg)
-  requires AcceptorHost.ReceiveProposeSendAccept(c.acceptors[accMsg.Src()], v.History(j).acceptors[accMsg.Src()], v.History(j+1).acceptors[accMsg.Src()], propMsg, accMsg)
+  requires AcceptorHost.ReceivePrepareSendPromise(c.acceptors[promMsg.Src()], v.History(i).acceptors[promMsg.Src()], v.History(i+1).acceptors[promMsg.Src()], stepI, inMsg, promMsg)
+  requires AcceptorHost.ReceiveProposeSendAccept(c.acceptors[accMsg.Src()], v.History(j).acceptors[accMsg.Src()], v.History(j+1).acceptors[accMsg.Src()], stepJ, propMsg, accMsg)
   ensures promMsg.vbOpt.Some?
   ensures chosenVB.b <= promMsg.vbOpt.value.b
 {}
@@ -312,8 +313,8 @@ returns (acceptMsgs: set<Message>)
     var x :| x in receivedAccepts;
     var subset := ExtractAcceptMessagesFromReceivedAccepts(c, v, receivedAccepts - {x}, vb, lnr);
     reveal_ValidHistory();
-    var i, msg := ReceiveAcceptStepSkolemization(c, v, |v.history|-1, lnr, vb, x);
-    acceptMsgs := subset + {msg};
+    var i, _, msgOps := ReceiveAcceptStepSkolemization(c, v, |v.history|-1, lnr, vb, x);
+    acceptMsgs := subset + {msgOps.recv.value};
   }
 }
 
@@ -329,7 +330,7 @@ returns (promQ: set<Message>, hb: LeaderId)
 {
   var bal := propMsg.bal;
   var i :|  && v.ValidHistoryIdxStrict(i)
-            && LeaderHost.SendPropose(c.leaders[bal], v.History(i).leaders[bal], v.History(i+1).leaders[bal], propMsg);
+            && LeaderHost.SendPropose(c.leaders[bal], v.History(i).leaders[bal], v.History(i+1).leaders[bal], LeaderHost.ProposeStep, propMsg);
   promQ := HighestHeardBackedByReceivedPromises(c, v, i, bal);
   var _ := ChosenImpliesSeenByHigherPromiseQuorum(c, v, chosenVB, bal, promQ);
   var hm :| WinningPromiseMessageInQuorum(c, v, promQ, bal, VB(v.History(i).leaders[bal].Value(), v.History(i).leaders[bal].highestHeardBallot.value), hm);
@@ -368,7 +369,8 @@ returns (promS: set<Message>)
   reveal_MessageSetDistinctAccs();
 
   reveal_ValidHistory();
-  var j, hm := ReceivePromise2StepSkolemization(c, v, i, idx, ldr.receivedPromisesAndValue.value, hbal);
+  var j, _, hmOps := ReceivePromise2StepSkolemization(c, v, i, idx, ldr.receivedPromisesAndValue.value, hbal);
+  var hm := hmOps.recv.value;
   assert ReceivePromise2WitnessCondition(c, v, j+1, idx, ldr.Value(), hbal);
   assert hm.vbOpt == Some(VB(ldr.Value(), hbal.value));
   promS := promS + {hm};
@@ -451,8 +453,8 @@ lemma PromiseMessageExistence(c: Constants, v: Variables, i: int, ldr: LeaderId,
             )
 {
   reveal_ValidHistory();
-  var _, m := ReceivePromise1ReceivePromise2StepSkolemization(c, v, i, ldr, acc);
-  promiseMsg := m;
+  var _, _, m := ReceivePromise1ReceivePromise2StepSkolemization(c, v, i, ldr, acc);
+  promiseMsg := m.recv.value;
 }
 
 lemma ChosenImpliesProposed(c: Constants, v: Variables, i: nat, vb: ValBal)
@@ -467,8 +469,8 @@ returns (proposeMsg: Message)
   var lnr: nat :| ChosenAtLearner(c, v.History(i), vb, lnr);
   var acc :| acc in v.History(i).learners[lnr].receivedAccepts.m[vb];
   reveal_ValidHistory();
-  var j, accMsg := ReceiveAcceptStepSkolemization(c, v, i, lnr, vb, acc);
-  var k, prop := SendAcceptSkolemization(c, v, accMsg);
+  var j, _, accMsgOps := ReceiveAcceptStepSkolemization(c, v, i, lnr, vb, acc);
+  var k, _, prop := SendAcceptSkolemization(c, v, accMsgOps.recv.value);
   return prop;
 }
 
@@ -485,7 +487,7 @@ lemma LearnerValidReceivedAccepts(c: Constants, v: Variables, i: nat, lnr: Learn
     && acc in v.History(i).learners[lnr].receivedAccepts.m[vb]
   ensures c.ValidAcceptorIdx(acc) {
     reveal_ValidHistory();
-    var j, accMsg := ReceiveAcceptStepSkolemization(c, v, i, lnr, vb, acc);
+    var j, _, accMsg := ReceiveAcceptStepSkolemization(c, v, i, lnr, vb, acc);
   }
 }
 

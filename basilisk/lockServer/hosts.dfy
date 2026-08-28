@@ -52,36 +52,38 @@ module ClientHost {
   {
     && v.WF(c)
     && match step
-      case ReleaseStep => NextReleaseStep(c, v, v', msgOps)
-      case ReceiveStep => NextReceiveStep1(c, v, v', msgOps)
+      case ReleaseStep => NextReleaseStep(c, v, v', step, msgOps)
+      case ReceiveStep => NextReceiveStep1(c, v, v', step, msgOps)
   }
 
-  ghost predicate NextReleaseStep(c: Constants, v: Variables, v': Variables, msgOps: MessageOps)
+  ghost predicate NextReleaseStep(c: Constants, v: Variables, v': Variables, step: Step, msgOps: MessageOps)
     requires v.WF(c)
   {
     && msgOps.send.Some?
     && msgOps.recv.None?
-    && SendRelease(c, v, v', msgOps.send.value)
+    && SendRelease(c, v, v', step, msgOps.send.value)
   }
 
-  ghost predicate SendRelease(c: Constants, v: Variables, v': Variables, msg: Message)
+  ghost predicate SendRelease(c: Constants, v: Variables, v': Variables, step: Step, outMsg: Message)
     requires v.WF(c)
   {
     // Enabling conditions
+    && step.ReleaseStep?
     && v.hasLock
     // Construct message
-    && msg == Release(c.myId, v.epoch + 1) // increment version
+    && outMsg == Release(c.myId, v.epoch + 1) // increment version
     // Update v'
     && v' == v.(hasLock := false)
   }
 
-  ghost predicate NextReceiveStep1(c: Constants, v: Variables, v': Variables, msgOps: MessageOps) {
+  ghost predicate NextReceiveStep1(c: Constants, v: Variables, v': Variables, step: Step, msgOps: MessageOps) {
     && msgOps.send.None?
     && msgOps.recv.Some?
-    && ReceiveGrant(c, v, v', msgOps.recv.value)
+    && ReceiveGrant(c, v, v', step, msgOps.recv.value)
   }
 
-  ghost predicate ReceiveGrant(c: Constants, v: Variables, v': Variables, inMsg: Message) {
+  ghost predicate ReceiveGrant(c: Constants, v: Variables, v': Variables, step: Step, inMsg: Message) {
+    && step.ReceiveStep?
     && UniqueKeyInFlightForHost(c, v, 0, inMsg)  // 0 is a dummy value
     && v' == v.(
       epoch := inMsg.epoch,
@@ -162,22 +164,23 @@ module ServerHost {
   {
     && v.WF(c)
     && match step
-      case GrantStep => NextGrantStep(c, v, v', msgOps)
-      case ReceiveStep => NextReceiveStep2(c, v, v', msgOps)
+      case GrantStep => NextGrantStep(c, v, v', step, msgOps)
+      case ReceiveStep => NextReceiveStep2(c, v, v', step, msgOps)
   }
 
-  ghost predicate NextGrantStep(c: Constants, v: Variables, v': Variables, msgOps: MessageOps)
+  ghost predicate NextGrantStep(c: Constants, v: Variables, v': Variables, step: Step, msgOps: MessageOps)
     requires v.WF(c)
   {
     && msgOps.send.Some?
     && msgOps.recv.None?
-    && SendGrant(c, v, v', msgOps.send.value)
+    && SendGrant(c, v, v', step, msgOps.send.value)
   }
 
-  ghost predicate SendGrant(c: Constants, v: Variables, v': Variables, msg: Message)
+  ghost predicate SendGrant(c: Constants, v: Variables, v': Variables, step: Step, msg: Message)
     requires v.WF(c)
   {
     // Enabling conditions
+    && step.GrantStep?
     && v.hasLock
     // Construct message
     && msg == Grant(0, v.nextClient, v.epoch + 1) // increment version
@@ -186,13 +189,14 @@ module ServerHost {
     && v'.nextClient in c.clientIds
   }
 
-  ghost predicate NextReceiveStep2(c: Constants, v: Variables, v': Variables, msgOps: MessageOps) {
+  ghost predicate NextReceiveStep2(c: Constants, v: Variables, v': Variables, step: Step, msgOps: MessageOps) {
     && msgOps.send.None?
     && msgOps.recv.Some?
-    && ReceiveRelease(c, v, v', msgOps.recv.value)
+    && ReceiveRelease(c, v, v', step, msgOps.recv.value)
   }
 
-  ghost predicate ReceiveRelease(c: Constants, v: Variables, v': Variables, inMsg: Message) {
+  ghost predicate ReceiveRelease(c: Constants, v: Variables, v': Variables, step: Step, inMsg: Message) {
+    && step.ReceiveStep?
     && UniqueKeyInFlightForHost(c, v, 0, inMsg)
     && v' == v.(
       epoch := inMsg.epoch,

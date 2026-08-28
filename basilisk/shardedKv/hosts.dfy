@@ -77,22 +77,23 @@ module Host {
   {
     && v.WF(c)
     && match step
-      case SendStep => NextSendStep(c, v, v', msgOps)
-      case ReceiveStep => NextReceiveStep(c, v, v', msgOps)
+      case SendStep => NextSendStep(c, v, v', step, msgOps)
+      case ReceiveStep => NextReceiveStep(c, v, v', step, msgOps)
   }
 
-  ghost predicate NextSendStep(c: Constants, v: Variables, v': Variables, msgOps: MessageOps)
+  ghost predicate NextSendStep(c: Constants, v: Variables, v': Variables, step: Step, msgOps: MessageOps)
     requires v.WF(c)
   {
     && msgOps.send.Some?
     && msgOps.recv.None?
-    && SendReconf(c, v, v', msgOps.send.value)
+    && SendReconf(c, v, v', step, msgOps.send.value)
   }
 
-  ghost predicate SendReconf(c: Constants, v: Variables, v': Variables, msg: Message)
+  ghost predicate SendReconf(c: Constants, v: Variables, v': Variables, step: Step, msg: Message)
     requires v.WF(c)
   {
     // Enabling conditions
+    && step.SendStep?
     && 0 < |v.myKeys|
     && HostOwnsUniqueKey(c, v, v.nextKeyToSend)
     && v.nextDst in c.hostIds
@@ -106,13 +107,14 @@ module Host {
     && v'.HasLiveKey(v'.nextKeyToSend)
   }
 
-  ghost predicate NextReceiveStep(c: Constants, v: Variables, v': Variables, msgOps: MessageOps) {
+  ghost predicate NextReceiveStep(c: Constants, v: Variables, v': Variables, step: Step, msgOps: MessageOps) {
     && msgOps.send.None?
     && msgOps.recv.Some?
-    && ReceiveReconf(c, v, v', msgOps.recv.value)
+    && ReceiveReconf(c, v, v', step, msgOps.recv.value)
   }
 
-  ghost predicate ReceiveReconf(c: Constants, v: Variables, v': Variables, inMsg: Message) {
+  ghost predicate ReceiveReconf(c: Constants, v: Variables, v': Variables, step: Step, inMsg: Message) {
+    && step.ReceiveStep?
     && UniqueKeyInFlightForHost(c, v, inMsg.key, inMsg)
     && v' == v.(
       myKeys := v.myKeys[inMsg.key := Entry(true, inMsg.version)]

@@ -64,36 +64,38 @@ module CoordinatorHost {
   ghost predicate NextStep(c: Constants, v: Variables, v': Variables, step: Step, msgOps: MessageOps)
   {
     match step
-      case VoteReqStep => NextVoteReqStep(c, v, v', msgOps)
-      case ReceiveVoteStep => NextReceiveVoteStep(c, v, v', msgOps)
-      case DecisionStep => NextDecisionStep(c, v, v', msgOps)
+      case VoteReqStep => NextVoteReqStep(c, v, v', step, msgOps)
+      case ReceiveVoteStep => NextReceiveVoteStep(c, v, v', step, msgOps)
+      case DecisionStep => NextDecisionStep(c, v, v', step, msgOps)
       case StutterStep => && v == v'
                           && msgOps.send == msgOps.recv == None
-      case PreCommitStep => NextSendPrecommitStep(c, v, v', msgOps)
-      case ReceivePrecommitStep => NextRecvPrecommitAckStep(c, v, v', msgOps)
+      case PreCommitStep => NextSendPrecommitStep(c, v, v', step, msgOps)
+      case ReceivePrecommitStep => NextRecvPrecommitAckStep(c, v, v', step, msgOps)
   }
 
-  ghost predicate NextVoteReqStep(c: Constants, v: Variables, v': Variables, msgOps: MessageOps) {
+  ghost predicate NextVoteReqStep(c: Constants, v: Variables, v': Variables, step: Step, msgOps: MessageOps) {
     && msgOps.recv.None?
     && msgOps.send.Some?
-    && SendVoteReq(c, v, v', msgOps.send.value)
+    && SendVoteReq(c, v, v', step, msgOps.send.value)
   }
 
   // Send predicate
-  ghost predicate SendVoteReq(c: Constants, v: Variables, v': Variables, msg: Message) {
-    && msg == VoteReq
+  ghost predicate SendVoteReq(c: Constants, v: Variables, v': Variables, step: Step, outMsg: Message) {
+    && step.VoteReqStep?
+    && outMsg == VoteReq
     && v' == v
   }
 
-  ghost predicate NextReceiveVoteStep(c: Constants, v: Variables, v': Variables, msgOps: MessageOps) {
+  ghost predicate NextReceiveVoteStep(c: Constants, v: Variables, v': Variables, step: Step, msgOps: MessageOps) {
     && msgOps.send.None?
     && msgOps.recv.Some?
-    && (ReceiveVoteYes(c, v, v', msgOps.recv.value) || ReceiveVoteNo(c, v, v', msgOps.recv.value))
+    && (ReceiveVoteYes(c, v, v', step, msgOps.recv.value) || ReceiveVoteNo(c, v, v', step, msgOps.recv.value))
   }
 
   // Receive predicate
-  ghost predicate ReceiveVoteNo(c: Constants, v: Variables, v': Variables, inMsg: Message) {
+  ghost predicate ReceiveVoteNo(c: Constants, v: Variables, v': Variables, step: Step, inMsg: Message) {
     // enabling conditions
+    && step.ReceiveVoteStep?
     && inMsg.Vote?
     && var vote, src := inMsg.v, inMsg.src;
     && vote == No
@@ -104,8 +106,9 @@ module CoordinatorHost {
   }
 
   // Receive predicate
-  ghost predicate ReceiveVoteYes(c: Constants, v: Variables, v': Variables, inMsg: Message) {
+  ghost predicate ReceiveVoteYes(c: Constants, v: Variables, v': Variables, step: Step, inMsg: Message) {
     // enabling conditions
+    && step.ReceiveVoteStep?
     && inMsg.Vote?
     && var vote, src := inMsg.v, inMsg.src;
     && vote == Yes
@@ -125,47 +128,50 @@ module CoordinatorHost {
     v.noVotes.Contains(voterId)
   }
 
-  ghost predicate NextDecisionStep(c: Constants, v: Variables, v': Variables, msgOps: MessageOps) {
+  ghost predicate NextDecisionStep(c: Constants, v: Variables, v': Variables, step: Step, msgOps: MessageOps) {
     && msgOps.recv.None?
     && msgOps.send.Some?
     && (|v.noVotes.s| > 0 || |v.preCommitAcks.s| == c.numParticipants)
-    && SendDecide(c, v, v', msgOps.send.value)
+    && SendDecide(c, v, v', step, msgOps.send.value)
   }
 
   // Send predicate
-  ghost predicate SendDecide(c: Constants, v: Variables, v': Variables, msg: Message) {
+  ghost predicate SendDecide(c: Constants, v: Variables, v': Variables, step: Step, outMsg: Message) {
     // enabling conditions
+    && step.DecisionStep?
     && v.decision.WONone?
     && (|v.noVotes.s| > 0 || |v.preCommitAcks.s| == c.numParticipants)
     // send message and update v'
     && if |v.noVotes.s| > 0 then
         && v' == v.(decision := WOSome(Abort))
-        && msg == Decide(Abort)
+        && outMsg == Decide(Abort)
     else if |v.preCommitAcks.s| == c.numParticipants then
         && v' == v.(decision := WOSome(Commit))
-        && msg == Decide(Commit)
+        && outMsg == Decide(Commit)
     else
       false
   }
 
-  ghost predicate NextSendPrecommitStep(c: Constants, v: Variables, v': Variables, msgOps: MessageOps){
+  ghost predicate NextSendPrecommitStep(c: Constants, v: Variables, v': Variables, step: Step, msgOps: MessageOps){
     && msgOps.recv.None?
     && msgOps.send.Some?
     && |v.yesVotes.s| == c.numParticipants
-    && SendPrecommit(c, v, v', msgOps.send.value)
+    && SendPrecommit(c, v, v', step, msgOps.send.value)
   }
-  ghost predicate SendPrecommit(c: Constants, v: Variables, v': Variables, msg: Message){
-    && msg.Precommit?
+  ghost predicate SendPrecommit(c: Constants, v: Variables, v': Variables, step: Step, outMsg: Message){
+    && step.PreCommitStep?
+    && outMsg.Precommit?
     && v' == v
     && |v.yesVotes.s| == c.numParticipants
   }
-  ghost predicate NextRecvPrecommitAckStep(c: Constants, v: Variables, v': Variables, msgOps: MessageOps){
+  ghost predicate NextRecvPrecommitAckStep(c: Constants, v: Variables, v': Variables, step: Step, msgOps: MessageOps){
     && msgOps.send.None?
     && msgOps.recv.Some?
-    && RecvPrecommitAck(c, v, v', msgOps.recv.value)
+    && ReceivePrecommitAck(c, v, v', step, msgOps.recv.value)
   }
 
-   ghost predicate RecvPrecommitAck(c: Constants, v: Variables, v': Variables, inMsg: Message){
+   ghost predicate ReceivePrecommitAck(c: Constants, v: Variables, v': Variables, step: Step, inMsg: Message){
+    && step.ReceivePrecommitStep?
     && inMsg.Precommitack?
     && var src := inMsg.src;
     // update v'
@@ -243,52 +249,55 @@ module ParticipantHost {
   ghost predicate NextStep(c: Constants, v: Variables, v': Variables, step: Step, msgOps: MessageOps)
   {
     match step
-      case ReceiveVoteReqStep => NextReceiveVoteReqStep(c, v, v', msgOps)
-      case ReceiveDecisionStep => NextReceiveDecisionStep(c, v, v', msgOps)
+      case ReceiveVoteReqStep => NextReceiveVoteReqStep(c, v, v', step, msgOps)
+      case ReceiveDecisionStep => NextReceiveDecisionStep(c, v, v', step, msgOps)
       case StutterStep =>
           && v == v'
           && msgOps.send == msgOps.recv == None
-      case ReceivePrecommitStep => NextReceivePrecommitSendPrecommitackStep(c, v, v', msgOps)
+      case ReceivePrecommitStep => NextReceivePrecommitSendPrecommitackStep(c, v, v', step, msgOps)
   }
 
-  ghost predicate NextReceiveVoteReqStep(c: Constants, v: Variables, v': Variables, msgOps: MessageOps) {
+  ghost predicate NextReceiveVoteReqStep(c: Constants, v: Variables, v': Variables, step: Step, msgOps: MessageOps) {
     && msgOps.send.Some?
     && msgOps.recv.Some?
-    && ReceiveVoteReqSendVote(c, v, v', msgOps.recv.value, msgOps.send.value)
+    && ReceiveVoteReqSendVote(c, v, v', step, msgOps.recv.value, msgOps.send.value)
   }
 
   // Receive-Send predicate
-  ghost predicate ReceiveVoteReqSendVote(c: Constants, v: Variables, v': Variables, inMsg: Message, outMsg: Message) {
+  ghost predicate ReceiveVoteReqSendVote(c: Constants, v: Variables, v': Variables, step: Step, inMsg: Message, outMsg: Message) {
     // enabling conditions
+    && step.ReceiveVoteReqStep?
     && inMsg.VoteReq?
     // update v' and specify outMsg
     && outMsg == Vote(c.preference, c.hostId)
     && v == v'
   }
 
-  ghost predicate NextReceiveDecisionStep(c: Constants, v: Variables, v': Variables, msgOps: MessageOps) {
+  ghost predicate NextReceiveDecisionStep(c: Constants, v: Variables, v': Variables, step: Step, msgOps: MessageOps) {
     && msgOps.send.None?
     && msgOps.recv.Some?
-    && ReceiveDecide(c, v, v', msgOps.recv.value)
+    && ReceiveDecide(c, v, v', step, msgOps.recv.value)
   }
 
   // Receive predicate
-  ghost predicate ReceiveDecide(c: Constants, v: Variables, v': Variables, inMsg: Message) {
+  ghost predicate ReceiveDecide(c: Constants, v: Variables, v': Variables, step: Step, inMsg: Message) {
     // enabling conditions
+    && step.ReceiveDecisionStep?
     && inMsg.Decide?
     && v.decision.WONone?
     // update v'
     && v' == v.(decision := WOSome(inMsg.decision))
   }
 
-  ghost predicate NextReceivePrecommitSendPrecommitackStep(c: Constants, v: Variables, v': Variables, msgOps: MessageOps){
+  ghost predicate NextReceivePrecommitSendPrecommitackStep(c: Constants, v: Variables, v': Variables, step: Step, msgOps: MessageOps){
     && msgOps.send.Some?
     && msgOps.recv.Some?
-    && ReceivePrecommitSendPrecommitack(c, v, v', msgOps.recv.value, msgOps.send.value)
+    && ReceivePrecommitSendPrecommitack(c, v, v', step, msgOps.recv.value, msgOps.send.value)
 
   }
-  ghost predicate ReceivePrecommitSendPrecommitack(c: Constants, v: Variables, v': Variables, inMsg: Message, outMsg: Message)
+  ghost predicate ReceivePrecommitSendPrecommitack(c: Constants, v: Variables, v': Variables, step: Step, inMsg: Message, outMsg: Message)
   {
+    && step.ReceivePrecommitStep?
     && outMsg == Precommitack(c.hostId)
     && inMsg.Precommit?
     && v' == v.(precommited := MonotonicBool(true))

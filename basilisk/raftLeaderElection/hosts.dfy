@@ -7,7 +7,6 @@ module Host {
   import opened MonotonicityLibrary
 
   datatype Step = InitCandidacyStep | SendVoteStep | RecvVoteStep | BecomeLeaderStep | LearnLeaderNewTermStep | LearnLeaderSameTermStep
-  datatype Status = Leader | Candidate | Follower
 
   datatype MonotonicTermState = MonotonicTermState(term:nat, acceptors: set<nat>, votedFor: nat){
     ghost predicate SatisfiesMonotonic(other: MonotonicTermState){
@@ -47,14 +46,14 @@ module Host {
       && (grp_v[idx].ms.votedFor == idx))
   }
 
-  ghost predicate NextInitCandidacyStep(c: Constants, v: Variables, v': Variables, msgOps: MessageOps)
+  ghost predicate NextInitCandidacyStep(c: Constants, v: Variables, v': Variables, step: Step, msgOps: MessageOps)
   {
     && msgOps.recv.None?
     && msgOps.send.Some?
-    && SendVoteReq(c, v, v', msgOps.send.value)
+    && SendVoteReq(c, v, v', step, msgOps.send.value)
   }
 
-  ghost predicate SendVoteReq(c: Constants, v: Variables, v': Variables, outMsg: Message)
+  ghost predicate SendVoteReq(c: Constants, v: Variables, v': Variables, step: Step, outMsg: Message)
   {
     && outMsg.VoteReq?
     && outMsg.term == v.ms.term + 1
@@ -62,14 +61,14 @@ module Host {
     && v' == v.(status := Candidate, ms := MonotonicTermState(v.ms.term + 1, {c.idx}, c.idx))
   }
 
-  ghost predicate NextSendVoteStep(c: Constants, v: Variables, v': Variables, msgOps: MessageOps)
+  ghost predicate NextSendVoteStep(c: Constants, v: Variables, v': Variables, step: Step, msgOps: MessageOps)
   {
     && msgOps.send.Some?
     && msgOps.recv.Some?
-    && ReceiveVoteReqSendVote(c, v, v', msgOps.recv.value, msgOps.send.value)
+    && ReceiveVoteReqSendVote(c, v, v', step, msgOps.recv.value, msgOps.send.value)
   }
 
-  ghost predicate ReceiveVoteReqSendVote(c: Constants, v: Variables, v': Variables, inMsg: Message, outMsg: Message)
+  ghost predicate ReceiveVoteReqSendVote(c: Constants, v: Variables, v': Variables, step: Step, inMsg: Message, outMsg: Message)
   {
     && inMsg.VoteReq?
     && inMsg.term > v.ms.term
@@ -81,14 +80,14 @@ module Host {
 
   }
 
-  ghost predicate NextRecvVoteStep(c: Constants, v: Variables, v': Variables, msgOps: MessageOps)
+  ghost predicate NextRecvVoteStep(c: Constants, v: Variables, v': Variables, step: Step, msgOps: MessageOps)
   {
     && msgOps.send.None?
     && msgOps.recv.Some?
-    && ReceiveVote(c, v, v', msgOps.recv.value)
+    && ReceiveVote(c, v, v', step, msgOps.recv.value)
   }
 
-  ghost predicate ReceiveVote(c: Constants, v: Variables, v': Variables, inMsg: Message)
+  ghost predicate ReceiveVote(c: Constants, v: Variables, v': Variables, step: Step, inMsg: Message)
   {
     && inMsg.Vote?
     && inMsg.candidate == c.idx
@@ -97,14 +96,14 @@ module Host {
     && v' == v.(ms := v.ms.(acceptors := v.ms.acceptors + {inMsg.voter}))
   }
 
-  ghost predicate NextBecomeLeaderStep(c: Constants, v: Variables, v': Variables, msgOps: MessageOps)
+  ghost predicate NextBecomeLeaderStep(c: Constants, v: Variables, v': Variables, step: Step, msgOps: MessageOps)
   {
     && msgOps.send.Some?
     && msgOps.recv.None?
-    && SendDeclare(c, v, v', msgOps.send.value)
+    && SendDeclare(c, v, v', step, msgOps.send.value)
   }
 
-  ghost predicate SendDeclare(c: Constants, v: Variables, v': Variables, outMsg: Message)
+  ghost predicate SendDeclare(c: Constants, v: Variables, v': Variables, step: Step, outMsg: Message)
   {
     && outMsg.Declare?
     && outMsg.leader == c.idx
@@ -114,28 +113,28 @@ module Host {
     && v' == v.(status := Leader)
   }
 
-  ghost predicate NextLearnLeaderNewTermStep(c: Constants, v: Variables, v': Variables, msgOps: MessageOps)
+  ghost predicate NextLearnLeaderNewTermStep(c: Constants, v: Variables, v': Variables, step: Step, msgOps: MessageOps)
   {
     && msgOps.send.None?
     && msgOps.recv.Some?
-    && ReceiveDeclare1(c, v, v', msgOps.recv.value)
+    && ReceiveDeclare1(c, v, v', step, msgOps.recv.value)
   }
 
-  ghost predicate ReceiveDeclare1(c: Constants, v: Variables, v': Variables, inMsg: Message)
+  ghost predicate ReceiveDeclare1(c: Constants, v: Variables, v': Variables, step: Step, inMsg: Message)
   {
     && inMsg.Declare?
     && inMsg.term > v.ms.term
     && v' == v.(status := Follower, ms := MonotonicTermState(inMsg.term, {}, inMsg.leader))
   }
 
-  ghost predicate NextLearnLeaderSameTermStep(c: Constants, v: Variables, v': Variables, msgOps: MessageOps)
+  ghost predicate NextLearnLeaderSameTermStep(c: Constants, v: Variables, v': Variables, step: Step, msgOps: MessageOps)
   {
     && msgOps.send.None?
     && msgOps.recv.Some?
-    && ReceiveDeclare2(c, v, v', msgOps.recv.value)
+    && ReceiveDeclare2(c, v, v', step, msgOps.recv.value)
   }
 
-  ghost predicate ReceiveDeclare2(c: Constants, v: Variables, v': Variables, inMsg: Message)
+  ghost predicate ReceiveDeclare2(c: Constants, v: Variables, v': Variables, step: Step, inMsg: Message)
   {
     && inMsg.Declare?
     && inMsg.term == v.ms.term
@@ -146,12 +145,12 @@ module Host {
   ghost predicate NextStep(c: Constants, v: Variables, v': Variables, step: Step, msgOps: MessageOps)
   {
     match step {
-      case InitCandidacyStep => NextInitCandidacyStep(c, v, v', msgOps)
-      case SendVoteStep => NextSendVoteStep(c, v, v', msgOps)
-      case RecvVoteStep => NextRecvVoteStep(c, v, v', msgOps)
-      case BecomeLeaderStep => NextBecomeLeaderStep(c, v, v', msgOps)
-      case LearnLeaderNewTermStep => NextLearnLeaderNewTermStep(c, v, v', msgOps)
-      case LearnLeaderSameTermStep => NextLearnLeaderSameTermStep(c, v, v', msgOps)
+      case InitCandidacyStep => NextInitCandidacyStep(c, v, v', step, msgOps)
+      case SendVoteStep => NextSendVoteStep(c, v, v', step, msgOps)
+      case RecvVoteStep => NextRecvVoteStep(c, v, v', step, msgOps)
+      case BecomeLeaderStep => NextBecomeLeaderStep(c, v, v', step, msgOps)
+      case LearnLeaderNewTermStep => NextLearnLeaderNewTermStep(c, v, v', step, msgOps)
+      case LearnLeaderSameTermStep => NextLearnLeaderSameTermStep(c, v, v', step, msgOps)
     }
   }
 

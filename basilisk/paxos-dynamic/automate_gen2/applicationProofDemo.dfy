@@ -118,8 +118,8 @@ lemma ChosenImpliesValidBallot(c: Constants, v: Variables, i: nat, vb: ValBal)
   var lnr: nat :| ChosenAtLearner(c, v.History(i), vb, lnr);
   var acc :| acc in v.History(i).hosts[lnr].receivedAccepts.m[vb];
   reveal_ValidHistory();
-  var j, accMsg := ReceiveAcceptStepSkolemization(c, v, i, lnr, vb, acc);
-  var k, propMsg := SendAcceptSkolemization(c, v, accMsg);
+  var j, _, accMsgOps := ReceiveAcceptStepSkolemization(c, v, i, lnr, vb, acc);
+  var k, _, propMsgOps := SendAcceptSkolemization(c, v, accMsgOps.recv.value);
 }
 
 lemma SafetyProofBallotInduction(c: Constants, v: Variables, vb1: ValBal, vb2: ValBal, promQ: set<Message>, hb: Ballot)
@@ -172,10 +172,12 @@ lemma SafetyProofBallotInductionStep(c: Constants, v: Variables, vb1: ValBal, vb
 {
   // Skolemize the Propose message associated with hm
   var promiser := hm.Src();
-  var i, _ := SendPromiseSkolemization(c, v, hm);
+  var i, _, _ := SendPromiseSkolemization(c, v, hm);
   reveal_ValidHistory();
-  var j, propMsg, outMsg := ReceiveProposeSendAcceptStepSkolemization(c, v, i, promiser, MVBSome(VB(vb2.v, hb)));
-  assert Host.ReceiveProposeSendAccept(c.hosts[promiser], v.History(j).hosts[promiser], v.History(j+1).hosts[promiser], propMsg, outMsg);
+  var j, step, msgOps := ReceiveProposeSendAcceptStepSkolemization(c, v, i, promiser, MVBSome(VB(vb2.v, hb)));
+  var propMsg := msgOps.recv.value;
+  var outMsg := msgOps.send.value;
+  assert Host.ReceiveProposeSendAccept(c.hosts[promiser], v.History(j).hosts[promiser], v.History(j+1).hosts[promiser], step, propMsg, outMsg);
   assert propMsg == Propose(hb, vb2.v);
   assert IsProposeMessage(v, propMsg);
 
@@ -230,13 +232,13 @@ returns (promMsg: Message)
   var accMsg :| accMsg in accQ && accMsg.acc == acc;
   promMsg :| promMsg in promQ && promMsg.acc == acc;
 
-  var i, inMsg := SendPromiseSkolemization(c, v, promMsg);
-  var j, propMsg := SendAcceptSkolemization(c, v, accMsg);
+  var i, stepI, inMsg := SendPromiseSkolemization(c, v, promMsg);
+  var j, stepJ, propMsg := SendAcceptSkolemization(c, v, accMsg);
   // Helper needed to avoid timeout
-  ChosenImpliesSeenByHigherPromiseQuorumHelper(c, v, chosenVB, inMsg, promMsg, promBal, i, propMsg, accMsg, j);
+  ChosenImpliesSeenByHigherPromiseQuorumHelper(c, v, chosenVB, stepI, inMsg, promMsg, promBal, i, stepJ, propMsg, accMsg, j);
 }
 
-lemma ChosenImpliesSeenByHigherPromiseQuorumHelper(c: Constants, v: Variables, chosenVB: ValBal, inMsg: Message, promMsg: Message, promBal: Ballot, i: nat, propMsg: Message, accMsg: Message, j: nat)
+lemma ChosenImpliesSeenByHigherPromiseQuorumHelper(c: Constants, v: Variables, chosenVB: ValBal, stepI: Host.Step, inMsg: Message, promMsg: Message, promBal: Ballot, i: nat, stepJ: Host.Step, propMsg: Message, accMsg: Message, j: nat)
   requires RegularInvs(c, v)
 
   // Pre-conditions on arguments
@@ -249,8 +251,8 @@ lemma ChosenImpliesSeenByHigherPromiseQuorumHelper(c: Constants, v: Variables, c
   requires promMsg.bal == promBal
   requires v.ValidHistoryIdxStrict(i)
   requires v.ValidHistoryIdxStrict(j)
-  requires Host.ReceivePrepareSendPromise(c.hosts[promMsg.Src()], v.History(i).hosts[promMsg.Src()], v.History(i+1).hosts[promMsg.Src()], inMsg, promMsg)
-  requires Host.ReceiveProposeSendAccept(c.hosts[accMsg.Src()], v.History(j).hosts[accMsg.Src()], v.History(j+1).hosts[accMsg.Src()], propMsg, accMsg)
+  requires Host.ReceivePrepareSendPromise(c.hosts[promMsg.Src()], v.History(i).hosts[promMsg.Src()], v.History(i+1).hosts[promMsg.Src()], stepI, inMsg, promMsg)
+  requires Host.ReceiveProposeSendAccept(c.hosts[accMsg.Src()], v.History(j).hosts[accMsg.Src()], v.History(j+1).hosts[accMsg.Src()], stepJ, propMsg, accMsg)
   // Post-conditions
   ensures promMsg.vbOpt.Some?
   ensures BalLteq(chosenVB.b, promMsg.vbOpt.value.b)
@@ -331,8 +333,8 @@ returns (acceptMsgs: set<Message>)
     var x :| x in receivedAccepts;
     var subset := ExtractAcceptMessagesFromReceivedAccepts(c, v, receivedAccepts - {x}, vb, lnr);
     reveal_ValidHistory();
-    var i, msg := ReceiveAcceptStepSkolemization(c, v, |v.history|-1, lnr, vb, x);
-    acceptMsgs := subset + {msg};
+    var i, _, msgOps := ReceiveAcceptStepSkolemization(c, v, |v.history|-1, lnr, vb, x);
+    acceptMsgs := subset + {msgOps.recv.value};
   }
 }
 
@@ -364,7 +366,7 @@ returns (promQ: set<Message>, hb: Ballot)
 {
   var bal := propMsg.bal;
   var i :|  && v.ValidHistoryIdxStrict(i)
-            && Host.SendPropose(c.hosts[bal.id], v.History(i).hosts[bal.id], v.History(i+1).hosts[bal.id], propMsg);
+            && Host.SendPropose(c.hosts[bal.id], v.History(i).hosts[bal.id], v.History(i+1).hosts[bal.id], Host.ProposeStep, propMsg);
   promQ := HighestHeardBackedByReceivedPromises(c, v, i, bal);
   var choosingWitness := ChosenImpliesSeenByHigherPromiseQuorum(c, v, chosenVB, bal, promQ);
   hb := v.History(i).hosts[bal.id].ls.highestHeardBallot.value;
@@ -402,7 +404,8 @@ returns (promS: set<Message>)
     assert hbal == ldr.ls.highestHeardBallot;
 
     reveal_ValidHistory();
-    var j, hm := Custom2ReceivePromise1ReceivePromise2StepSkolemization(c, v, i, ldrBal.id, ldrBal, ldr.LdrValue(), hbal.value);
+    var j, _, hmOps := Custom2ReceivePromise1ReceivePromise2StepSkolemization(c, v, i, ldrBal.id, ldrBal, ldr.LdrValue(), hbal.value);
+    var hm := hmOps.recv.value;
     promS := promS + {hm};
     accs := accs - {hm.acc};
     assert MessageSetDistinctAccs(promS);  // trigger
@@ -466,10 +469,10 @@ lemma PromiseMessageExistence(c: Constants, v: Variables, i: int, ldrBal: Ballot
             )
 {
   reveal_ValidHistory();
-  var j, m := Custom1ReceivePromise1ReceivePromise2StepSkolemization(c, v, i, ldrBal.id, ldrBal, acc);
-  assert Host.ReceivePromise1(c.hosts[ldrBal.id], v.History(j).hosts[ldrBal.id], v.History(j+1).hosts[ldrBal.id], m)
-          || Host.ReceivePromise2(c.hosts[ldrBal.id], v.History(j).hosts[ldrBal.id], v.History(j+1).hosts[ldrBal.id], m);
-  promiseMsg := m;
+  var j, step, m := Custom1ReceivePromise1ReceivePromise2StepSkolemization(c, v, i, ldrBal.id, ldrBal, acc);
+  assert Host.ReceivePromise1(c.hosts[ldrBal.id], v.History(j).hosts[ldrBal.id], v.History(j+1).hosts[ldrBal.id], step, m.recv.value)
+          || Host.ReceivePromise2(c.hosts[ldrBal.id], v.History(j).hosts[ldrBal.id], v.History(j+1).hosts[ldrBal.id], step, m.recv.value);
+  promiseMsg := m.recv.value;
 }
 
 lemma ChosenImpliesProposed(c: Constants, v: Variables, i: nat, vb: ValBal)
@@ -488,8 +491,8 @@ returns (proposeMsg: Message)
   var lnr: nat :| ChosenAtLearner(c, v.History(i), vb, lnr);
   var acc :| acc in v.History(i).hosts[lnr].receivedAccepts.m[vb];
   reveal_ValidHistory();
-  var j, accMsg := ReceiveAcceptStepSkolemization(c, v, i, lnr, vb, acc);
-  var k, prop := SendAcceptSkolemization(c, v, accMsg);
+  var j, _, accMsgOps := ReceiveAcceptStepSkolemization(c, v, i, lnr, vb, acc);
+  var k, _, prop := SendAcceptSkolemization(c, v, accMsgOps.recv.value);
   return prop;
 }
 
@@ -511,7 +514,7 @@ lemma LearnerValidReceivedAccepts(c: Constants, v: Variables, i: nat, lnr: HostI
     && acc in v.History(i).hosts[lnr].receivedAccepts.m[vb]
   ensures c.ValidHostIdx(acc) {
     reveal_ValidHistory();
-    var j, accMsg := ReceiveAcceptStepSkolemization(c, v, i, lnr, vb, acc);
+    var j, _, accMsg := ReceiveAcceptStepSkolemization(c, v, i, lnr, vb, acc);
   }
 }
 

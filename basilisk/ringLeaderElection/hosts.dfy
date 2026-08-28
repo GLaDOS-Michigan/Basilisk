@@ -52,17 +52,17 @@ module Host {
   {
     && v.WF(c)
     && match step
-      case ReceiveStep => NextReceiveStep(c, v, v', msgOps)
+      case ReceiveStep => NextReceiveStep(c, v, v', step, msgOps)
   }
 
-  ghost predicate NextReceiveStep(c: Constants, v: Variables, v': Variables, msgOps: MessageOps) {
+  ghost predicate NextReceiveStep(c: Constants, v: Variables, v': Variables, step: Step, msgOps: MessageOps) {
     && msgOps.send.Some?
     && msgOps.recv.Some?
-    && ReceiveMsgSendMsg(c, v, v', msgOps.recv.value, msgOps.send.value)
+    && ReceiveMsgSendMsg(c, v, v', step, msgOps.recv.value, msgOps.send.value)
   }
 
   // Receive-Send predicate
-  ghost predicate ReceiveMsgSendMsg(c: Constants, v: Variables, v': Variables, inMsg: Message, outMsg: Message) {
+  ghost predicate ReceiveMsgSendMsg(c: Constants, v: Variables, v': Variables, step: Step, inMsg: Message, outMsg: Message) {
     // enabling conditions
     && v.highestHeard < inMsg.val
     && inMsg.src < c.numParticipants

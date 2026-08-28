@@ -79,7 +79,7 @@ lemma RegInvsYieldReceivedVotesValidAtHost(c: Constants, v: Variables, h: nat)
     forall voter {:trigger voter in v.Last().hosts[h].receivedVotes.Value()} | voter in v.Last().hosts[h].receivedVotes.Value()
     ensures voter in cluster {
       reveal_ValidHistory();
-      var _, _ := ReceiveVoteStepSkolemization(c, v, |v.history|-1, h, voter);
+      var _, _, _ := ReceiveVoteStepSkolemization(c, v, |v.history|-1, h, voter);
       assert 0 <= voter < |c.hosts|;
       assert voter in cluster;
     }
@@ -110,11 +110,11 @@ lemma SafetyProof(c: Constants, v: Variables)
     ghost var rogueId := QuorumIntersection(cluster, rv1, rv2);
     assert v.Last().hosts[rogueId].nominee == WOSome(l1) by {
       reveal_ValidHistory();
-      var j1, msg1 := ReceiveVoteStepSkolemization(c, v, |v.history|-1, l1, rogueId);
+      var j1, _, msg1 := ReceiveVoteStepSkolemization(c, v, |v.history|-1, l1, rogueId);
     }
     assert v.Last().hosts[rogueId].nominee == WOSome(l2) by {
       reveal_ValidHistory();
-      var j2, msg2 := ReceiveVoteStepSkolemization(c, v, |v.history|-1, l2, rogueId);
+      var j2, _, msg2 := ReceiveVoteStepSkolemization(c, v, |v.history|-1, l2, rogueId);
     }
   }
 }

@@ -80,44 +80,45 @@ module LeaderHost {
 
   datatype Step =
     | PrepareStep()
-    | ReceivePromiseUpdateStep()
     | ReceivePromiseNoUpdateStep()
+    | ReceivePromiseUpdateStep()
     | ProposeStep()
     | StutterStep()
 
   ghost predicate NextStep(c: Constants, v: Variables, v': Variables, step: Step, msgOps: MessageOps)
   {
     match step
-      case PrepareStep => NextPrepareStep(c, v, v', msgOps)
-      case ReceivePromiseUpdateStep => NextReceivePromiseUpdateStep(c, v, v', msgOps)
-      case ReceivePromiseNoUpdateStep => NextReceivePromiseNoUpdateStep(c, v, v', msgOps)
-      case ProposeStep => NextProposeStep(c, v, v', msgOps)
-      case StutterStep => NextStutterStep1(c, v, v', msgOps)
+      case PrepareStep => NextPrepareStep(c, v, v', step, msgOps)
+      case ReceivePromiseNoUpdateStep => NextReceivePromiseNoUpdateStep(c, v, v', step, msgOps)
+      case ReceivePromiseUpdateStep => NextReceivePromiseUpdateStep(c, v, v', step, msgOps)
+      case ProposeStep => NextProposeStep(c, v, v', step, msgOps)
+      case StutterStep => NextStutterStep1(c, v, v', step, msgOps)
   }
 
-  ghost predicate NextPrepareStep(c: Constants, v: Variables, v': Variables, msgOps: MessageOps) {
+  ghost predicate NextPrepareStep(c: Constants, v: Variables, v': Variables, step: Step, msgOps: MessageOps) {
     && msgOps.recv.None?
     && msgOps.send.Some?
-    && SendPrepare(c, v, v', msgOps.send.value)
+    && SendPrepare(c, v, v', step, msgOps.send.value)
   }
 
   // Send predicate
-  ghost predicate SendPrepare(c: Constants, v: Variables, v': Variables, msg: Message) {
+  ghost predicate SendPrepare(c: Constants, v: Variables, v': Variables, step: Step, outMsg: Message) {
     // enabling conditions
-    && true
+    && step.PrepareStep?
     // send message and update v'
-    && msg == Prepare(c.id)
+    && outMsg == Prepare(c.id)
     && v' == v
   }
 
-  ghost predicate NextReceivePromiseNoUpdateStep(c: Constants, v: Variables, v': Variables, msgOps: MessageOps) {
+  ghost predicate NextReceivePromiseNoUpdateStep(c: Constants, v: Variables, v': Variables, step: Step, msgOps: MessageOps) {
     && msgOps.recv.Some?
     && msgOps.send.None?
-    && ReceivePromise1(c, v, v', msgOps.recv.value)
+    && ReceivePromise1(c, v, v', step, msgOps.recv.value)
   }
 
   // Receive predicate
-  ghost predicate ReceivePromise1(c: Constants, v: Variables, v': Variables, inMsg: Message) {
+  ghost predicate ReceivePromise1(c: Constants, v: Variables, v': Variables, step: Step, inMsg: Message) {
+    && step.ReceivePromiseNoUpdateStep?
     && inMsg.Promise?
     && var bal := inMsg.bal;
     && var acc := inMsg.acc;
@@ -136,14 +137,15 @@ module LeaderHost {
     )
   }
 
-  ghost predicate NextReceivePromiseUpdateStep(c: Constants, v: Variables, v': Variables, msgOps: MessageOps) {
+  ghost predicate NextReceivePromiseUpdateStep(c: Constants, v: Variables, v': Variables, step: Step, msgOps: MessageOps) {
     && msgOps.recv.Some?
     && msgOps.send.None?
-    && ReceivePromise2(c, v, v', msgOps.recv.value)
+    && ReceivePromise2(c, v, v', step, msgOps.recv.value)
   }
 
   // Receive predicate
-  ghost predicate ReceivePromise2(c: Constants, v: Variables, v': Variables, inMsg: Message) {
+  ghost predicate ReceivePromise2(c: Constants, v: Variables, v': Variables, step: Step, inMsg: Message) {
+    && step.ReceivePromiseUpdateStep?
     && inMsg.Promise?
     && var bal := inMsg.bal;
     && var acc := inMsg.acc;
@@ -164,15 +166,16 @@ module LeaderHost {
             )
   }
 
-  ghost predicate NextProposeStep(c: Constants, v: Variables, v': Variables, msgOps: MessageOps) {
+  ghost predicate NextProposeStep(c: Constants, v: Variables, v': Variables, step: Step, msgOps: MessageOps) {
     && msgOps.recv.None?
     && msgOps.send.Some?
-    && SendPropose(c, v, v', msgOps.send.value)
+    && SendPropose(c, v, v', step, msgOps.send.value)
   }
 
   // Send predicate
-  ghost predicate SendPropose(c: Constants, v: Variables, v': Variables, msg: Message) {
+  ghost predicate SendPropose(c: Constants, v: Variables, v': Variables, step: Step, msg: Message) {
     // enabling conditions
+    && step.ProposeStep?
     && v.CanProposeV(c, v.receivedPromisesAndValue.value)
     && v.HeardAtMost(c.id)
     // send message and update v'
@@ -180,7 +183,8 @@ module LeaderHost {
     && v' == v
   }
 
-  ghost predicate NextStutterStep1(c: Constants, v: Variables, v': Variables, msgOps: MessageOps) {
+  ghost predicate NextStutterStep1(c: Constants, v: Variables, v': Variables, step: Step, msgOps: MessageOps) {
+    && step.StutterStep?
     && v == v'
     && msgOps.send == None
     && msgOps.recv == None
@@ -280,20 +284,21 @@ module AcceptorHost {
   ghost predicate NextStep(c: Constants, v: Variables, v': Variables, step: Step, msgOps: MessageOps)
   {
     match step
-      case ReceivePrepareStep => NextPromiseStep(c, v, v', msgOps)
-      case ReceiveProposeStep => NextAcceptStep(c, v, v', msgOps)
-      case StutterStep => NextStutterStep2(c, v, v', msgOps)
+      case ReceivePrepareStep => NextPromiseStep(c, v, v', step, msgOps)
+      case ReceiveProposeStep => NextAcceptStep(c, v, v', step, msgOps)
+      case StutterStep => NextStutterStep2(c, v, v', step, msgOps)
   }
 
-  ghost predicate NextPromiseStep(c: Constants, v: Variables, v': Variables, msgOps: MessageOps) {
+  ghost predicate NextPromiseStep(c: Constants, v: Variables, v': Variables, step: Step, msgOps: MessageOps) {
     && msgOps.recv.Some?
     && msgOps.send.Some?
-    && ReceivePrepareSendPromise(c, v, v', msgOps.recv.value, msgOps.send.value)
+    && ReceivePrepareSendPromise(c, v, v', step, msgOps.recv.value, msgOps.send.value)
   }
 
   // Receive-and-Send predicate
-  ghost predicate ReceivePrepareSendPromise(c: Constants, v: Variables, v': Variables, inMsg: Message, outMsg: Message) {
+  ghost predicate ReceivePrepareSendPromise(c: Constants, v: Variables, v': Variables, step: Step, inMsg: Message, outMsg: Message) {
     // enabling conditions
+    && step.ReceivePrepareStep?
     && inMsg.Prepare?
     && var bal := inMsg.bal;
     && var doPromise := v.promised.MNSome? ==> v.promised.value < bal;
@@ -304,15 +309,16 @@ module AcceptorHost {
   }
 
   // Note that this step contains both receive and send
-  ghost predicate NextAcceptStep(c: Constants, v: Variables, v': Variables, msgOps: MessageOps) {
+  ghost predicate NextAcceptStep(c: Constants, v: Variables, v': Variables, step: Step, msgOps: MessageOps) {
     && msgOps.recv.Some?
     && msgOps.send.Some?
-    && ReceiveProposeSendAccept(c, v, v', msgOps.recv.value, msgOps.send.value)
+    && ReceiveProposeSendAccept(c, v, v', step, msgOps.recv.value, msgOps.send.value)
   }
 
   // Receive-and-Send predicate
-  ghost predicate ReceiveProposeSendAccept(c: Constants, v: Variables, v': Variables, inMsg: Message, outMsg: Message) {
+  ghost predicate ReceiveProposeSendAccept(c: Constants, v: Variables, v': Variables, step: Step, inMsg: Message, outMsg: Message) {
     // enabling conditions
+    && step.ReceiveProposeStep?
     && inMsg.Propose?
     // update v' and specify outMsg
     && var bal := inMsg.bal;
@@ -325,7 +331,8 @@ module AcceptorHost {
           acceptedVB := MVBSome(VB(val, bal)))
   }
 
-  ghost predicate NextStutterStep2(c: Constants, v: Variables, v': Variables, msgOps: MessageOps) {
+  ghost predicate NextStutterStep2(c: Constants, v: Variables, v': Variables, step: Step, msgOps: MessageOps) {
+    && step.StutterStep?
     && msgOps.send == None
     && msgOps.recv == None
     && v' == v
@@ -394,9 +401,9 @@ module LearnerHost {
   ghost predicate NextStep(c: Constants, v: Variables, v': Variables, step: Step, msgOps: MessageOps)
   {
     match step
-      case ReceiveStep => NextReceiveAcceptStep(c, v, v', msgOps)
-      case LearnStep(vb) => NextLearnStep(c, v, v', vb, msgOps)
-      case StutterStep => NextStutterStep3(c, v, v', msgOps)
+      case ReceiveStep => NextReceiveAcceptStep(c, v, v', step, msgOps)
+      case LearnStep(vb) => NextLearnStep(c, v, v', step, msgOps)
+      case StutterStep => NextStutterStep3(c, v, v', step, msgOps)
   }
 
   function UpdateReceivedAccepts(receivedAccepts: MonotonicReceivedAcceptsMap,
@@ -411,30 +418,33 @@ module LearnerHost {
       RA(receivedAccepts.m[vb := {acc}])
   }
 
-  ghost predicate NextReceiveAcceptStep(c: Constants, v: Variables, v': Variables, msgOps: MessageOps) {
+  ghost predicate NextReceiveAcceptStep(c: Constants, v: Variables, v': Variables, step: Step, msgOps: MessageOps) {
     && msgOps.recv.Some?
     && msgOps.send.None?
-    && ReceiveAccept(c, v, v', msgOps.recv.value)
+    && ReceiveAccept(c, v, v', step, msgOps.recv.value)
   }
 
   // Receive predicate
-  ghost predicate ReceiveAccept(c: Constants, v: Variables, v': Variables, inMsg: Message) {
+  ghost predicate ReceiveAccept(c: Constants, v: Variables, v': Variables, step: Step, inMsg: Message) {
+    && step.ReceiveStep?
     && inMsg.Accept?
     && v' == v.(
       receivedAccepts := UpdateReceivedAccepts(v.receivedAccepts, inMsg.vb, inMsg.acc)
     )
   }
 
-  ghost predicate NextLearnStep(c: Constants, v: Variables, v': Variables, vb: ValBal, msgOps: MessageOps) {
+  ghost predicate NextLearnStep(c: Constants, v: Variables, v': Variables, step: Step, msgOps: MessageOps) {
+    && step.LearnStep?
     && msgOps.recv.None?
     && msgOps.send.None?
-    && vb in v.receivedAccepts.m                  // enabling
-    && |v.receivedAccepts.m[vb]| >= c.p2Quorum    // enabling
+    && step.vb in v.receivedAccepts.m                  // enabling
+    && |v.receivedAccepts.m[step.vb]| >= c.p2Quorum    // enabling
     && v.learned.None?
-    && v' == v.(learned := Some(vb.v))            // learn new value
+    && v' == v.(learned := Some(step.vb.v))            // learn new value
   }
 
-  ghost predicate NextStutterStep3(c: Constants, v: Variables, v': Variables, msgOps: MessageOps) {
+  ghost predicate NextStutterStep3(c: Constants, v: Variables, v': Variables, step: Step, msgOps: MessageOps) {
+    && step.StutterStep?
     && msgOps.recv.None?
     && msgOps.send.None?
     && v' == v

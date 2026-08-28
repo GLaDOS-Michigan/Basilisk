@@ -78,12 +78,12 @@ module ThreePCInvariantProof {
         reveal_ValidHistory();
         forall hostId | hostId in v.Last().GetCoordinator(c).yesVotes.s
         ensures 0 <= hostId < n && GetParticipantPreference(c, hostId) == Yes {
-            var j, msg := ReceiveVoteYesStepSkolemization(c, v, i, 0, hostId);
+            var j, _, msg := ReceiveVoteYesStepSkolemization(c, v, i, 0, hostId);
         }
 
         forall hostId | hostId in v.Last().GetCoordinator(c).noVotes.s
         ensures 0 <= hostId < n && GetParticipantPreference(c, hostId) == No {
-            var j, msg := ReceiveVoteNoStepSkolemization(c, v, i, 0, hostId);
+            var j, _, msg := ReceiveVoteNoStepSkolemization(c, v, i, 0, hostId);
         }
     }
 
@@ -95,7 +95,7 @@ module ThreePCInvariantProof {
         forall idx: HostId | c.ValidParticipantId(idx) && PartipantHasDecided(c, v.Last(), idx)
         ensures v.Last().GetCoordinator(c).decision == v.Last().participants[idx].decision {
             reveal_ValidHistory();
-            var j, decideMsg := ReceiveDecideStepSkolemization(c, v, |v.history|-1, idx, v.Last().participants[idx].decision);
+            var j, _, decideMsg := ReceiveDecideStepSkolemization(c, v, |v.history|-1, idx, v.Last().participants[idx].decision);
         }
     }
 
@@ -110,8 +110,8 @@ lemma AC3Proof(c: Constants, v: Variables)
   ensures AllPreferYes(c) {
     if !AllPreferYes(c) {
       reveal_ValidHistory();
-      var _, commitMsg := ReceiveDecideStepSkolemization(c, v, |v.history|-1, pidx, v.Last().participants[pidx].decision);
-      var j := SendDecideSkolemization(c, v, commitMsg);
+      var _, _, commitMsgOps := ReceiveDecideStepSkolemization(c, v, |v.history|-1, pidx, v.Last().participants[pidx].decision);
+      var j, _ := SendDecideSkolemization(c, v, commitMsgOps.recv.value);
       var noVoter: HostId :| c.ValidParticipantId(noVoter) && c.participants[noVoter].preference == No;
       YesVotesContainsAllParticipantsWhenFull(c, v, j);
       InvImpliesLeaderTallyReflectsPreferences(c, v);
@@ -130,12 +130,12 @@ lemma AC3Proof(c: Constants, v: Variables)
         ensures ParticipantDecidedCommit(c, v.Last(), pidx) {
             if !ParticipantDecidedCommit(c, v.Last(), pidx) {
             reveal_ValidHistory();
-            var _, abortMsg := ReceiveDecideStepSkolemization(c, v, |v.history|-1, pidx, v.Last().participants[pidx].decision);
-            var j := SendDecideSkolemization(c, v, abortMsg);
+            var _, _, abortMsgOps := ReceiveDecideStepSkolemization(c, v, |v.history|-1, pidx, v.Last().participants[pidx].decision);
+            var j, _ := SendDecideSkolemization(c, v, abortMsgOps.recv.value);
             InvImpliesLeaderTallyReflectsPreferences(c, v);
             var rogue :| rogue in v.History(j).coordinator[0].noVotes.s;
             // Need to show rogue is a valid participant id
-            var _, voteMsg := ReceiveVoteNoStepSkolemization(c, v, j, 0, rogue);
+            var _, _, voteMsg := ReceiveVoteNoStepSkolemization(c, v, j, 0, rogue);
             }
         }
     }
@@ -150,20 +150,20 @@ lemma AC3Proof(c: Constants, v: Variables)
         forall id | id in v.Last().GetCoordinator(c).yesVotes.s
         ensures 0 <= id < |c.participants| {
             reveal_ValidHistory();
-            var j, msg := ReceiveVoteYesStepSkolemization(c, v, |v.history| - 1, 0, id);  // witness
+            var j, _, msgOps := ReceiveVoteYesStepSkolemization(c, v, |v.history| - 1, 0, id);  // witness
         }
 
         var x :| x in l.preCommitAcks.s;
         reveal_ValidHistory();
-        var _, precommitAckMsg := RecvPrecommitAckStepSkolemization(c, v, i, 0, x);
-        var _, precommitMsg := SendPrecommitackSkolemization(c, v, precommitAckMsg);
-        var j := SendPrecommitSkolemization(c, v, precommitMsg);
+        var _, _, precommitAckMsgOps := ReceivePrecommitAckStepSkolemization(c, v, i, 0, x);
+        var _, _, precommitMsg := SendPrecommitackSkolemization(c, v, precommitAckMsgOps.recv.value);
+        var j, _ := SendPrecommitSkolemization(c, v, precommitMsg);
         // assert |v.History(j).GetCoordinator(c).yesVotes.s| == |c.participants|;
 
         forall id | id in v.History(j).GetCoordinator(c).yesVotes.s
         ensures 0 <= id < |c.participants| {
             reveal_ValidHistory();
-            var _, msg := ReceiveVoteYesStepSkolemization(c, v, j, 0, id);  // witness
+            var _, _, msg := ReceiveVoteYesStepSkolemization(c, v, j, 0, id);  // witness
         }
 
         forall id | 0 <= id < |c.participants|

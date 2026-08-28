@@ -46,34 +46,34 @@ module Host {
   }
 
 
-  ghost predicate NextLocalSumStep(c: Constants, v: Variables, v': Variables, msgOps: MessageOps) {
+  ghost predicate NextLocalSumStep(c: Constants, v: Variables, v': Variables, step: Step, msgOps: MessageOps) {
     && v.WF(c)
     && msgOps == MessageOps(None, None)
     && v.sum.None?
     && v' == v.(sum := Some(Sum(c.arr)))
   }
 
-  ghost predicate NextTransferStep(c: Constants, v: Variables, v': Variables, msgOps: MessageOps) {
+  ghost predicate NextTransferStep(c: Constants, v: Variables, v': Variables, step: Step, msgOps: MessageOps) {
     && msgOps.recv.None?
     && msgOps.send.Some?
-    && SendTransferSum(c, v, v', msgOps.send.value)
+    && SendTransferSum(c, v, v', step, msgOps.send.value)
   }
 
-  ghost predicate SendTransferSum(c: Constants, v: Variables, v': Variables, outMsg: Message) {
+  ghost predicate SendTransferSum(c: Constants, v: Variables, v': Variables, step: Step, outMsg: Message) {
     && v.WF(c)
     && v.sum.Some?
     && v' == v
     && outMsg == TransferSum(v.sum.value, c.idx)
   }
 
-  ghost predicate NextReceiveStep(c: Constants, v: Variables, v': Variables, msgOps: MessageOps) {
+  ghost predicate NextReceiveStep(c: Constants, v: Variables, v': Variables, step: Step, msgOps: MessageOps) {
     && v.WF(c)
     && msgOps.recv.Some?
     && msgOps.send.None?
-    && ReceiveTransferSum(c, v, v', msgOps.recv.value)
+    && ReceiveTransferSum(c, v, v', step, msgOps.recv.value)
   }
 
-  ghost predicate ReceiveTransferSum(c: Constants, v: Variables, v': Variables, inMsg: Message) {
+  ghost predicate ReceiveTransferSum(c: Constants, v: Variables, v': Variables, step: Step, inMsg: Message) {
     && v.WF(c)
     && c.idx == 0
     && inMsg.TransferSum?
@@ -88,7 +88,7 @@ module Host {
     if |arr| == 0 then 0 else arr[0].value + OptionSum(arr[1..])
   }
 
-  ghost predicate NextGlobalSumStep(c: Constants, v: Variables, v': Variables, msgOps: MessageOps) {
+  ghost predicate NextGlobalSumStep(c: Constants, v: Variables, v': Variables, step: Step, msgOps: MessageOps) {
     && v.WF(c)
     && c.idx == 0
     && msgOps.recv.None?
@@ -102,10 +102,10 @@ module Host {
   ghost predicate NextStep(c: Constants, v: Variables, v': Variables, step: Step, msgOps: MessageOps)
   {
     match step {
-      case LocalSumStep => NextLocalSumStep(c, v, v', msgOps)
-      case SendSumStep => NextTransferStep(c, v, v', msgOps)
-      case RecvSumStep => NextReceiveStep(c, v, v', msgOps)
-      case GlobalSumStep => NextGlobalSumStep(c, v, v', msgOps)
+      case LocalSumStep => NextLocalSumStep(c, v, v', step, msgOps)
+      case SendSumStep => NextTransferStep(c, v, v', step, msgOps)
+      case RecvSumStep => NextReceiveStep(c, v, v', step, msgOps)
+      case GlobalSumStep => NextGlobalSumStep(c, v, v', step, msgOps)
     }
   }
 

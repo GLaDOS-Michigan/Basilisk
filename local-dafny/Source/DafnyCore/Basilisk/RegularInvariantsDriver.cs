@@ -143,7 +143,7 @@ public class RegularInvariantsDriver {
           var updatedVariable = prefix + update.Item2;
           if (!updatedVariablesName.Contains(updatedVariable)){
             updatedVariablesName.Add(updatedVariable);
-            stepFootprint.Fields.Add(new BasiliskField(update.Item2, update.Item3.Type.ToString()));
+            stepFootprint.Fields.Add(new BasiliskField(updatedVariable, update.Item3.Type.ToString()));
           }
         }
 

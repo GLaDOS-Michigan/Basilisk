@@ -85,29 +85,30 @@ module Host {
   {
     && v.WF(c)
     && match step
-      case SendStep => NextSendStep(c, v, v', msgOps)
-      case ReceiveStep => NextReceiveStep(c, v, v', msgOps)
+      case SendStep => NextSendStep(c, v, v', step, msgOps)
+      case ReceiveStep => NextReceiveStep(c, v, v', step, msgOps)
   }
 
-  ghost predicate NextSendStep(c: Constants, v: Variables, v': Variables, msgOps: MessageOps)
+  ghost predicate NextSendStep(c: Constants, v: Variables, v': Variables, step: Step, msgOps: MessageOps)
     requires v.WF(c)
   {
     && msgOps.send.Some?
     && msgOps.recv.None?
-    && SendReconf(c, v, v', msgOps.send.value)
+    && SendReconf(c, v, v', step, msgOps.send.value)
   }
 
   // Send predicate
-  ghost predicate SendReconf(c: Constants, v: Variables, v': Variables, msg: Message)
+  ghost predicate SendReconf(c: Constants, v: Variables, v': Variables, step: Step, inMsg: Message)
     requires v.WF(c)
   {
     // Enabling conditions
+    && step.SendStep?
     && 0 < |v.myKeys|
     && v.HasLiveKeySet(v.nextKeysToSend)
     && v.nextDst in c.hostIds
     // Construct message
     && var vks := (map k: UniqueKey | k in v.nextKeysToSend :: (v.myKeys[k].version + 1) as nat);  // increment version
-    && msg == Reconf(c.myId, v.nextDst, vks)
+    && inMsg == Reconf(c.myId, v.nextDst, vks)
     // Update v'
     && v'.myKeys ==
         (map k | k in v.myKeys
@@ -116,14 +117,15 @@ module Host {
     && v'.HasLiveKeySet(v'.nextKeysToSend)
   }
 
-  ghost predicate NextReceiveStep(c: Constants, v: Variables, v': Variables, msgOps: MessageOps) {
+  ghost predicate NextReceiveStep(c: Constants, v: Variables, v': Variables, step: Step, msgOps: MessageOps) {
     && msgOps.send.None?
     && msgOps.recv.Some?
-    && ReceiveReconf(c, v, v', msgOps.recv.value)
+    && ReceiveReconf(c, v, v', step, msgOps.recv.value)
 
   }
 
-  ghost predicate ReceiveReconf(c: Constants, v: Variables, v': Variables, inMsg: Message) {
+  ghost predicate ReceiveReconf(c: Constants, v: Variables, v': Variables, step: Step, inMsg: Message) {
+    && step.ReceiveStep?
     && (forall k | k in inMsg.vks :: v.HasKey(k))
     && v' == v.(
       myKeys := (map k | k in v.myKeys

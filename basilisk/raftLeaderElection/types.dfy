@@ -4,6 +4,7 @@ module Types {
   import opened UtilitiesLibrary
 
   type HostId = nat
+  datatype Status = Leader | Candidate | Follower
 
   datatype Message = VoteReq(term:nat, candidate: nat) | Vote(term: nat, voter: nat, candidate: nat) | Declare(term: nat, leader: nat) {
     ghost function Src() : nat {

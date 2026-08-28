@@ -70,10 +70,10 @@ lemma RegularInvImpliesSafety(c: Constants, v: Variables)
       ensures v.Last().hosts[l1].ms.term != v.Last().hosts[l2].ms.term{
         var commonAcc := GetIntersectingAcceptor(c, v, l1, l2);
         if commonAcc != l1 && commonAcc != l2{
-          var _, inMsg1 := Custom1ReceiveVoteStepSkolemization(c, v, |v.history| - 1, l1, commonAcc, v.Last().hosts[l1].ms.term);
-          var _, inMsg2 := Custom1ReceiveVoteStepSkolemization(c, v, |v.history| - 1, l2, commonAcc, v.Last().hosts[l2].ms.term);
-          var j1, _ := SendVoteSkolemization(c, v, inMsg1);
-          var j2, _ := SendVoteSkolemization(c, v, inMsg2);
+          var _, _, inMsg1Ops := Custom1ReceiveVoteStepSkolemization(c, v, |v.history| - 1, l1, commonAcc, v.Last().hosts[l1].ms.term);
+          var _, _, inMsg2Ops := Custom1ReceiveVoteStepSkolemization(c, v, |v.history| - 1, l2, commonAcc, v.Last().hosts[l2].ms.term);
+          var j1, _, _ := SendVoteSkolemization(c, v, inMsg1Ops.recv.value);
+          var j2, _, _ := SendVoteSkolemization(c, v, inMsg2Ops.recv.value);
           // assert v.History(j1+1).hosts[inMsg1.Src()].ms.term == v.Last().hosts[l1].ms.term;
           // assert v.History(j2+1).hosts[inMsg2.Src()].ms.term == v.Last().hosts[l2].ms.term;
           // if j1 + 1 <= j2 +1 && v.Last().hosts[l1].ms.term == v.Last().hosts[l2].ms.term {
@@ -90,10 +90,10 @@ lemma RegularInvImpliesSafety(c: Constants, v: Variables)
 
         }
         else if commonAcc == l1 {
-          var _, inMsg := Custom1ReceiveVoteStepSkolemization(c, v, |v.history| - 1, l2, commonAcc, v.Last().hosts[l2].ms.term);
+          var _, _, inMsg := Custom1ReceiveVoteStepSkolemization(c, v, |v.history| - 1, l2, commonAcc, v.Last().hosts[l2].ms.term);
         }
         else{
-          var _, inMsg := Custom1ReceiveVoteStepSkolemization(c, v, |v.history| - 1, l1, commonAcc, v.Last().hosts[l1].ms.term);
+          var _, _, inMsg := Custom1ReceiveVoteStepSkolemization(c, v, |v.history| - 1, l1, commonAcc, v.Last().hosts[l1].ms.term);
         }
       }
 }
@@ -108,26 +108,33 @@ returns (accId: HostId)
   requires v.Last().hosts[l2].status.Leader?
   ensures accId in v.Last().hosts[l1].ms.acceptors && accId in v.Last().hosts[l2].ms.acceptors
 {
+    assert ValidMessages(c, v);
     var j1, _, _ := Custom2SendDeclareStepSkolemization(c, v, |v.history| - 1, l1, v.Last().hosts[l1].ms);
     var j2, _, _ := Custom2SendDeclareStepSkolemization(c, v, |v.history| - 1, l2, v.Last().hosts[l2].ms);
-    // assert |v.History(j1).hosts[l1].ms.acceptors| >= c.f + 1;
-    // assert |v.History(j2).hosts[l2].ms.acceptors| >= c.f + 1;
-    // assert v.History(j1).hosts[l1].ms == v.Last().hosts[l1].ms;
-    // assert v.History(j2).hosts[l2].ms == v.Last().hosts[l2].ms;
-    var allAccs := set id | 0 <= id < 2*c.f+1;
-    SetComprehensionSize(2*c.f+1);
-    forall i:nat | i in v.History(j1).hosts[l1].ms.acceptors ensures i in allAccs{
+    assert |v.History(j1).hosts[l1].ms.acceptors| >= c.f + 1;
+    assert |v.History(j2).hosts[l2].ms.acceptors| >= c.f + 1;
+    assert v.History(j1).hosts[l1].ms == v.Last().hosts[l1].ms;
+    assert v.History(j2).hosts[l2].ms == v.Last().hosts[l2].ms;
+    var n := 2 * c.f + 1;
+    assert |c.hosts| == n;
+    var allAccs := set id: int {:trigger Identity(id)} | 0 <= id < n :: id;
+    SetComprehensionSize(n);
+    assert |allAccs| == n;
+    forall i:nat | i in v.History(j1).hosts[l1].ms.acceptors ensures i in allAccs {
       if i != c.hosts[l1].idx {
-        var _, msg := Custom1ReceiveVoteStepSkolemization(c, v, j1, l1, i, v.History(j1).hosts[l1].ms.term);
-        // assert ValidMessages(c, v);
+        var k, step, msgOps := Custom1ReceiveVoteStepSkolemization(c, v, j1, l1, i, v.History(j1).hosts[l1].ms.term);
+        assert Host.ReceiveVote(c.hosts[l1], v.History(k).hosts[l1], v.History(k+1).hosts[l1], step, msgOps.recv.value);
       }
+      assert Identity(i as int) in allAccs;
     }
-    forall i:nat | i in v.History(j2).hosts[l2].ms.acceptors ensures i in allAccs{
+    forall i:nat | i in v.History(j2).hosts[l2].ms.acceptors ensures i in allAccs {
       if i != c.hosts[l2].idx{
-        var _, msg := Custom1ReceiveVoteStepSkolemization(c, v, j2, l2, i, v.History(j2).hosts[l2].ms.term);
-        // assert ValidMessages(c, v);
+        var k, step, msgOps := Custom1ReceiveVoteStepSkolemization(c, v, j2, l2, i, v.History(j2).hosts[l2].ms.term);
+        assert Host.ReceiveVote(c.hosts[l2], v.History(k).hosts[l2], v.History(k+1).hosts[l2], step, msgOps.recv.value);
       }
+      assert Identity(i as int) in allAccs;
     }
+    assert |v.History(j1).hosts[l1].ms.acceptors| + |v.History(j2).hosts[l2].ms.acceptors| >= 2 * c.f + 2;
     accId := QuorumIntersection(allAccs , v.History(j1).hosts[l1].ms.acceptors, v.History(j2).hosts[l2].ms.acceptors);
 }
 // END SAFETY PROOF

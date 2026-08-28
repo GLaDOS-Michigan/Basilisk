@@ -133,7 +133,7 @@ lemma LemmaSentNotMyIdImpliesReceivedId(c: Constants, v: Variables)
   forall msg | msg in v.network.sentMsgs && msg.val != c.hosts[msg.src].hostId
   ensures Msg(msg.val, Predecessor(|c.hosts|, msg.src)) in v.network.sentMsgs
   {
-    var i, _ := SendMsgSkolemization(c, v, msg);
+    var i, _, _ := SendMsgSkolemization(c, v, msg);
   }
 }
 

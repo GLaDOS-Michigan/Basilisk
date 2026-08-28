@@ -79,8 +79,8 @@ lemma InvNextSafety(c: Constants, v: Variables, v': Variables)
     // Assert that every member of globalSum is correct host local sum.
     if l.globalSum.None? {
       forall j:nat | j<|l.peerSums| ensures l.peerSums[j] == Some(Sum(c.hosts[j].arr)){
-        var _, msg := ReceiveTransferSumStepSkolemization(c, v, |v.history| - 1, 0, j, l.peerSums[j]);
-        var k := SendTransferSumSkolemization(c, v, msg);
+        var _, _, msgOps := ReceiveTransferSumStepSkolemization(c, v, |v.history| - 1, 0, j, l.peerSums[j]);
+        var k, _ := SendTransferSumSkolemization(c, v, msgOps.recv.value);
         var _, _, _ := NextLocalSumStepStepSkolemization(c, v, k, j, v.History(k).hosts[j].sum);
       }
       sequenceSumLemma(c.hosts, l.peerSums);

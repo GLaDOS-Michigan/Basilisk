@@ -60,34 +60,36 @@ module Host {
   {
     && v.WF(c)
     && match step
-      case TransmissionStep => NextTransmissionStep(c, v, v', msgOps)
-      case ReceiveStep => NextReceiveStep(c, v, v', msgOps)
+      case TransmissionStep => NextTransmissionStep(c, v, v', step, msgOps)
+      case ReceiveStep => NextReceiveStep(c, v, v', step, msgOps)
   }
 
-  ghost predicate NextTransmissionStep(c: Constants, v: Variables, v': Variables, msgOps: MessageOps)
+  ghost predicate NextTransmissionStep(c: Constants, v: Variables, v': Variables, step: Step, msgOps: MessageOps)
     requires v.WF(c)
   {
     && msgOps.send.Some?
     && msgOps.recv.None?
-    && SendGrant(c, v, v', msgOps.send.value)
+    && SendGrant(c, v, v', step, msgOps.send.value)
   }
 
   // Send predicate
-  ghost predicate SendGrant(c: Constants, v: Variables, v': Variables, msg: Message)
+  ghost predicate SendGrant(c: Constants, v: Variables, v': Variables, step: Step, msg: Message)
     requires v.WF(c)
   {
+    && step.TransmissionStep?
     && v.hasLock
     && msg == Grant(c.hostId, Successor(c.numParticipants, c.hostId), v.myEpoch + 1)
     && v' == v.(hasLock := false)
   }
 
-  ghost predicate NextReceiveStep(c: Constants, v: Variables, v': Variables, msgOps: MessageOps) {
+  ghost predicate NextReceiveStep(c: Constants, v: Variables, v': Variables, step: Step, msgOps: MessageOps) {
     && msgOps.send.None?
     && msgOps.recv.Some?
-    && ReceiveGrantStep(c, v, v', msgOps.recv.value)
+    && ReceiveGrantStep(c, v, v', step, msgOps.recv.value)
   }
 
-  ghost predicate ReceiveGrantStep(c: Constants, v: Variables, v': Variables, inMsg: Message) {
+  ghost predicate ReceiveGrantStep(c: Constants, v: Variables, v': Variables, step: Step, inMsg: Message) {
+    && step.ReceiveStep?
     && UniqueKeyInFlightForHost(c, v, 0, inMsg)   // the 0 literal is a useless dummy value
     && v' == v.(hasLock := true, myEpoch := inMsg.epoch)
   }
