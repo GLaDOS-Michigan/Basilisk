@@ -77,7 +77,10 @@ module MonotonicityLibrary {
       )
     }
     ghost function AddKey(k: K) : MonotonicMapOfWriteOnceOptions<K, V> {
-      MonotonicMapOfWriteOnceOptions(m[k := WONone])
+      if k in m then
+        this
+      else
+        MonotonicMapOfWriteOnceOptions(m[k := WONone])
     }
     ghost function Add(k: K, v: V) : MonotonicMapOfWriteOnceOptions<K, V> {
       MonotonicMapOfWriteOnceOptions(m[k := WOSome(v)])
