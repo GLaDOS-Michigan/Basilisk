@@ -68,6 +68,44 @@ module MonotonicityLibrary {
     }
   }
 
+  datatype MonotonicMapOfWriteOnceOptions<K, V> = MonotonicMapOfWriteOnceOptions(m: map<K, MonotonicWriteOnceOption<V>>)
+  {
+    ghost predicate SatisfiesMonotonic(past: MonotonicMapOfWriteOnceOptions<K, V>) {
+      forall k | k in past.m :: (
+        && k in m
+        && m[k].SatisfiesMonotonic(past.m[k])
+      )
+    }
+    ghost function AddKey(k: K) : MonotonicMapOfWriteOnceOptions<K, V> {
+      MonotonicMapOfWriteOnceOptions(m[k := WONone])
+    }
+    ghost function Add(k: K, v: V) : MonotonicMapOfWriteOnceOptions<K, V> {
+      MonotonicMapOfWriteOnceOptions(m[k := WOSome(v)])
+    }
+  }
+
+  datatype MonotonicMapOfSets<K, V> = MonotonicMapOfSets(m: map<K, MonotonicSet<V>>)
+  {
+    ghost predicate SatisfiesMonotonic(past: MonotonicMapOfSets<K, V>) {
+      forall k | k in past.m :: (
+        && k in m
+        && m[k].SatisfiesMonotonic(past.m[k])
+      )
+    }
+    ghost function AddKey(k: K) : MonotonicMapOfSets<K, V> {
+      if k in m then
+        this
+      else
+        MonotonicMapOfSets(m[k := MonotonicSet({})])
+    }
+    ghost function Add(k: K, v: V) : MonotonicMapOfSets<K, V> {
+      if k in m then
+        MonotonicMapOfSets(m[k := m[k].Add(v)])
+      else
+        MonotonicMapOfSets(m[k := MonotonicSet({v})])
+    }
+  }
+
   datatype MonotonicBool = MonotonicBool(b: bool)
   {
     ghost predicate SatisfiesMonotonic(past: MonotonicBool) {

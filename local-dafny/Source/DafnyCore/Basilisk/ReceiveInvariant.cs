@@ -609,8 +609,24 @@ namespace Microsoft.Dafny
         string typeB = parts[1].Trim();
         var suffix = FormalsForType(typeB, count + 1);
         return (string.Format("a{0}: {1}, {2}", count, typeA, suffix.res), suffix.nextCount);
-      // } else if (type.StartsWith("MonotonicMapOfMaps")) {
-      // }
+      } else if (type.StartsWith("MonotonicMapOfSets<")) {
+        int startIndex = type.IndexOf('<');
+        int endIndex = type.LastIndexOf('>');
+        string innerContent = type.Substring(startIndex + 1, endIndex - startIndex - 1);
+        string[] parts = innerContent.Split(new[] { ',' }, 2);
+        string typeA = parts[0].Trim();
+        string typeB = $"MonotonicSet<{parts[1].Trim()}>";
+        var suffix = FormalsForType(typeB, count + 1);
+        return (string.Format("a{0}: {1}, {2}", count, typeA, suffix.res), suffix.nextCount);
+      } else if (type.StartsWith("MonotonicMapOfWriteOnceOptions")) {
+        int startIndex = type.IndexOf('<');
+        int endIndex = type.LastIndexOf('>');
+        string innerContent = type.Substring(startIndex + 1, endIndex - startIndex - 1);
+        string[] parts = innerContent.Split(new[] { ',' }, 2);
+        string typeA = parts[0].Trim();
+        string typeB = $"MonotonicWriteOnceOption<{parts[1].Trim()}>";
+        var suffix = FormalsForType(typeB, count + 1);
+        return (string.Format("a{0}: {1}, {2}", count, typeA, suffix.res), suffix.nextCount);
       } else {
         // Base case
         return (string.Format("a{0}: {1}", count, type), count + 1);
@@ -638,7 +654,22 @@ namespace Microsoft.Dafny
         string typeB = parts[1].Trim();
         var suffix = WitnessArgsForType(typeB, count + 1);
         return (string.Format("a{0}, {1}", count, suffix.res), suffix.nextCount);
-      // } else if (type.StartsWith("MonotonicMapOfMaps")) {
+      } else if (type.StartsWith("MonotonicMapOfSets<")) {
+        int startIndex = type.IndexOf('<');
+        int endIndex = type.LastIndexOf('>');
+        string innerContent = type.Substring(startIndex + 1, endIndex - startIndex - 1);
+        string[] parts = innerContent.Split(new[] { ',' }, 2);
+        string typeB = $"MonotonicSet<{parts[1].Trim()}>";
+        var suffix = WitnessArgsForType(typeB, count + 1);
+        return (string.Format("a{0}, {1}", count, suffix.res), suffix.nextCount);
+      } else if (type.StartsWith("MonotonicMapOfWriteOnceOptions<")) {
+        int startIndex = type.IndexOf('<');
+        int endIndex = type.LastIndexOf('>');
+        string innerContent = type.Substring(startIndex + 1, endIndex - startIndex - 1);
+        string[] parts = innerContent.Split(new[] { ',' }, 2);
+        string typeB = $"MonotonicWriteOnceOption<{parts[1].Trim()}>";
+        var suffix = WitnessArgsForType(typeB, count + 1);
+        return (string.Format("a{0}, {1}", count, suffix.res), suffix.nextCount);
       } else if (type.StartsWith("seq<")) {
         // Recursive case: Dafny built-in seq
         int startIndex = type.IndexOf('<');
@@ -696,7 +727,26 @@ namespace Microsoft.Dafny
           var nextName = string.Format("{0}.m[{1}].m", name, key);
           var suffix = WitnessExpressionForType(typeB, nextName, count + 1);
           return (string.Format("{0} in v.History(i).{1}[idx].{2}.m\n  && {3}", key, HostField, name, suffix.res), suffix.nextCount);
-        // } else if (type.StartsWith("MonotonicMap<")) {
+        } else if (type.StartsWith("MonotonicMapOfSets<")) {
+          var key = string.Format("a{0}", count);
+          int startIndex = type.IndexOf('<');
+          int endIndex = type.LastIndexOf('>');
+          string innerContent = type.Substring(startIndex + 1, endIndex - startIndex - 1);
+          string[] parts = innerContent.Split(new[] { ',' }, 2);
+          string typeB = $"MonotonicSet<{parts[1].Trim()}>";
+          var nextName = string.Format("{0}.m[{1}]", name, key);
+          var suffix = WitnessExpressionForType(typeB, nextName, count + 1);
+          return (string.Format("{0} in v.History(i).{1}[idx].{2}.m\n  && {3}", key, HostField, name, suffix.res), suffix.nextCount);
+        } else if (type.StartsWith("MonotonicMapOfWriteOnceOptions")) {
+          var key = string.Format("a{0}", count);
+          int startIndex = type.IndexOf('<');
+          int endIndex = type.LastIndexOf('>');
+          string innerContent = type.Substring(startIndex + 1, endIndex - startIndex - 1);
+          string[] parts = innerContent.Split(new[] { ',' }, 2);
+          string typeB = $"MonotonicWriteOnceOption<{parts[1].Trim()}>";
+          var nextName = string.Format("{0}.m[{1}]", name, key);
+          var suffix = WitnessExpressionForType(typeB, nextName, count + 1);
+          return (string.Format("{0} in v.History(i).{1}[idx].{2}.m\n  && {3}", key, HostField, name, suffix.res), suffix.nextCount);
         } else if (type.StartsWith("seq<")) {
           // Recursive case: Dafny built-in seq
           var key = string.Format("a{0}", count);
