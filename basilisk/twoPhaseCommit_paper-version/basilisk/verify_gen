@@ -6,7 +6,12 @@ dafny="$scriptpath/../../../local-dafny/Scripts/dafny"
 
 dafnyFootprint="$dafny /genFootprint"
 dafnyMsgInv="$dafny /msgMonoInvs"
-dafnyVerify="$dafny /timeLimit:20 /compile:0  /noNLarith /autoTriggers:1 /vcsCores:10"
+if [ -z "${DAFNY_BINARY}" ]; then
+    latestDafny="$dafny"
+else
+    latestDafny="${DAFNY_BINARY}"
+fi
+dafnyVerify="$latestDafny verify --resource-limit=100000000 --disable-nonlinear-arithmetic --cores=10"
 
 files="$scriptpath/../../lib/* $scriptpath/../hosts.dfy $scriptpath/distributedSystem.dfy $scriptpath/spec.dfy $scriptpath/messageInvariantsAutogen.dfy $scriptpath/monotonicityInvariantsAutogen.dfy $scriptpath/applicationProof.dfy"
 

@@ -13,15 +13,20 @@ else
 fi
 dafnyVerify="$latestDafny verify --resource-limit=100000000 --disable-nonlinear-arithmetic --cores=10"
 
-files="$scriptpath/../../lib/* $scriptpath/../hosts.dfy $scriptpath/../types.dfy $scriptpath/distributedSystem.dfy $scriptpath/spec.dfy $scriptpath/messageInvariantsAutogen.dfy $scriptpath/monotonicityInvariantsAutogen.dfy $scriptpath/applicationProofDemo.dfy"
+files="$scriptpath/../../lib/* $scriptpath/../hosts.dfy $scriptpath/../types.dfy $scriptpath/LLMScratchpad.dfy $scriptpath/distributedSystem.dfy $scriptpath/spec.dfy $scriptpath/messageInvariantsAutogen.dfy $scriptpath/monotonicityInvariantsAutogen.dfy $scriptpath/applicationProofDemo.dfy"
 
 rm -f $scriptpath/footprintsAutogen.json $scriptpath/messageInvariantsAutogen.dfy $scriptpath/monotonicityInvariantsAutogen.dfy
 
-# echo "Generating footprints"
+echo "Generating footprints"
 $dafnyFootprint "$scriptpath/distributedSystem.dfy" > footprints.log
 
 echo "Generating invariants"
 $dafnyMsgInv "$scriptpath/distributedSystem.dfy" > autoInvs.log
+
+# time {
+#     $dafnyFootprint "$scriptpath/distributedSystem.dfy"
+#     $dafnyMsgInv "$scriptpath/distributedSystem.dfy"
+# }
 
 echo "Verifying $files" | tr " " "\n"
 
